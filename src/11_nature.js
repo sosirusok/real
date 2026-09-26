@@ -253,19 +253,65 @@ function buildSpecies() {
         ? makeDeciduous(s0, { ...d.o, cards: Math.max(18, Math.round(d.o.cards * 0.28)), cardSize: d.o.cardSize * 1.7, prim: Math.min(3, d.o.prim) })
         : makeConifer(s0, { ...d.o, tiers: Math.max(4, Math.round(d.o.tiers * 0.45)), perTier: Math.max(4, Math.round(d.o.perTier * 0.55)) });
       g.lo = lo;
+      g.clearance = treeGeometryClearance(g);
       vars.push(g);
       h = g.height;
     }
     const lm = makeLeafMaterial(TEX[d.tex], 'leaf-' + name, { h, stiff: d.stiff || 1.4, transl: d.transl });
     const bm = makeBarkMaterial('bark-' + name, h);
-    SPECIES[name] = { vars, lm, bm, h, items: [] };
+    SPECIES[name] = { vars, lm, bm, h, stiff: d.stiff || 1.4, items: [] };
   }
+}
+
+// Include the larger low-detail cards, branches and random tree rotation. A
+// trunk-only placement check allows an outdoor crown to cross an interior wall.
+function treeGeometryClearance(g) {
+  return ['trunk', 'leaves'].map(part => {
+    let radius = 0, minY = Infinity, maxY = -Infinity;
+    for (const geo of [g[part], g.lo[part]]) {
+      const p = geo.getAttribute('position');
+      for (let i = 0; i < p.count; i++) {
+        radius = Math.max(radius, Math.hypot(p.getX(i), p.getZ(i)));
+        minY = Math.min(minY, p.getY(i)); maxY = Math.max(maxY, p.getY(i));
+      }
+    }
+    return { part, radius, minY, maxY };
+  });
+}
+
+function treeOverlapsBuilding(sp, it) {
+  const parts = sp.vars[it.v].clearance.map(bound => {
+    const hf = clamp(bound.maxY / sp.h, 0, 1.2);
+    // windBend reaches 1.575 at maximum wind; instancing leaves that bend in
+    // world metres. Leaf flutter, unlike the bend, scales with the tree.
+    const bend = 1.575 * hf * hf * sp.h * 0.12 / (bound.part === 'trunk' ? 1.6 : sp.stiff);
+    const flutter = bound.part === 'leaves' ? 0.075 * hf * it.s : 0;
+    return { radius: bound.radius * it.s + bend + flutter + 0.18,
+      minY: it.y + bound.minY * it.s - flutter, maxY: it.y + bound.maxY * it.s + flutter };
+  });
+  return CITYDATA.buildings.some(b => {
+    const room = b.room || b;
+    const baseY = room.baseY ?? heightAt(b.cx, b.cz);
+    const minY = baseY - (room.plinth || 0);
+    const maxY = baseY + (b.H ?? (4.2 + Math.max(0, (room.floors || 1) - 1) * (room.fh || 3.2))) + 1.2;
+    const c = room.c ?? Math.cos(b.rot || 0), s = room.s ?? Math.sin(b.rot || 0);
+    const dx = it.x - b.cx, dz = it.z - b.cz;
+    const lx = dx * c - dz * s, lz = dx * s + dz * c;
+    // Circle versus the rotated footprint, including roof overhang. Vertical
+    // separation permits a high crown over a genuinely lower roof.
+    const qx = Math.max(0, Math.abs(lx) - b.w / 2 - 0.45);
+    const qz = Math.max(0, Math.abs(lz) - b.d / 2 - 0.45);
+    return parts.some(p => p.maxY >= minY && p.minY <= maxY && qx * qx + qz * qz <= p.radius * p.radius);
+  });
 }
 
 function plant(name, x, z, { y = null, s = 1, tint = null } = {}) {
   const sp = SPECIES[name];
   const yy = y === null ? heightAt(x, z) - 0.15 : y;
-  sp.items.push({ x, y: yy, z, s: s * (0.85 + rand() * 0.3), r: rand() * TAU, v: Math.floor(rand() * sp.vars.length), tint });
+  const it = { x, y: yy, z, s: s * (0.85 + rand() * 0.3), r: rand() * TAU, v: Math.floor(rand() * sp.vars.length), tint };
+  if (treeOverlapsBuilding(sp, it)) return false;
+  sp.items.push(it);
+  return true;
 }
 
 // instancing into spatial cells for culling
