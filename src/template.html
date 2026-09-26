@@ -1,0 +1,195 @@
+<title>윤슬 항구</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ink: #0b0f14;
+    --glass: rgba(13, 18, 24, 0.58);
+    --glass-strong: rgba(13, 18, 24, 0.78);
+    --line: rgba(236, 228, 214, 0.12);
+    --paper: #efe8dc;
+    --muted: #a9b0b3;
+    --amber: #f0b35a;
+    --amber-ink: #2a1c08;
+    --sea: #7fb7b0;
+    --serif: 'Gowun Batang', 'Noto Serif KR', 'Apple SD Gothic Neo', serif;
+    --sans: 'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  html, body { height: 100%; margin: 0; background: var(--ink); color: var(--paper); overflow: hidden; }
+  body { font-family: var(--sans); font-size: 14px; -webkit-font-smoothing: antialiased; }
+  #world { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  .hud { position: fixed; inset: 0; pointer-events: none; padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px); display: grid; grid-template-rows: auto 1fr auto; gap: 12px; transition: opacity .5s ease; }
+  .hud.hidden { opacity: 0; }
+  .hud.hidden * { pointer-events: none !important; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .brand { pointer-events: auto; padding: 12px 16px 12px; background: linear-gradient(180deg, rgba(10,14,18,.55), rgba(10,14,18,.25)); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(12px) saturate(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.2); max-width: min(360px, 100%); }
+  .brand h1 { margin: 0; font-family: var(--serif); font-weight: 700; font-size: 26px; letter-spacing: 0.02em; line-height: 1.15; text-wrap: balance; }
+  .brand h1 small { font-family: var(--sans); font-weight: 400; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-left: 8px; vertical-align: 3px; }
+  .log { margin-top: 6px; font-family: var(--mono); font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; font-variant-numeric: tabular-nums; }
+  .log b { color: var(--paper); font-weight: 500; }
+  .top-right { display: flex; gap: 8px; pointer-events: auto; }
+  .icon-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: grid; place-items: center; cursor: pointer; }
+  .icon-btn:hover { background: var(--glass-strong); }
+  .icon-btn svg { width: 18px; height: 18px; stroke: var(--paper); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .icon-btn[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); }
+  .icon-btn[aria-pressed="true"] svg { stroke: var(--amber-ink); }
+
+  .dock { justify-self: center; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: auto; max-width: 100%; }
+  .seg, .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 4px; border-radius: 14px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(12px) saturate(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.2); }
+  .seg button, .chips button { border: 0; background: transparent; padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 500; letter-spacing: 0.01em; white-space: nowrap; }
+  .seg button:hover, .chips button:hover { background: rgba(255,255,255,0.07); }
+  .seg button[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); }
+  .chips button { font-size: 12.5px; color: var(--muted); padding: 6px 11px; }
+  .chips button .k { font-family: var(--mono); font-size: 10.5px; opacity: .55; margin-right: 5px; }
+  .chips button:hover { color: var(--paper); }
+
+  .drawer { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 68px); right: 16px; width: min(300px, calc(100vw - 32px)); max-height: calc(100% - 180px); overflow-y: auto; padding: 16px; border-radius: 16px; background: var(--glass-strong); border: 1px solid var(--line); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); pointer-events: auto; display: grid; gap: 14px; transform-origin: top right; transition: opacity .2s ease, transform .2s ease; }
+  .drawer[hidden] { display: none !important; }
+  .drawer h2 { margin: 0; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .row { display: grid; gap: 6px; }
+  .row label, .row .lab { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; }
+  .row output { font-family: var(--mono); font-size: 12px; color: var(--amber); font-variant-numeric: tabular-nums; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; cursor: pointer; }
+  input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, #2b4a63, #d9895a 50%, #f3d27a 62%, #7fb7d8 80%, #22304a); }
+  input[type=range].plain::-webkit-slider-runnable-track { background: rgba(255,255,255,0.18); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+  input[type=range]::-moz-range-track { height: 4px; border-radius: 4px; background: rgba(255,255,255,0.18); }
+  input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); }
+  .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .tg { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,0.03); cursor: pointer; font-size: 12.5px; }
+  .tg::after { content: ''; width: 26px; height: 14px; border-radius: 8px; background: rgba(255,255,255,0.18); box-shadow: inset -12px 0 0 2px rgba(20,24,28,.9); transition: all .15s; flex: none; }
+  .tg[aria-pressed="true"]::after { background: var(--amber); box-shadow: inset 12px 0 0 2px rgba(20,24,28,.9); }
+  .qual { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .qual button { border: 1px solid var(--line); background: rgba(255,255,255,0.03); border-radius: 9px; padding: 7px 0; font-size: 12px; cursor: pointer; }
+  .qual button[aria-pressed="true"] { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  .play { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); border-radius: 9px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
+  .play[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); }
+  .note { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin: 0; }
+
+  .hint { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; padding: 10px 16px; border-radius: 12px; background: var(--glass-strong); border: 1px solid var(--line); font-size: 13px; color: var(--paper); text-align: center; line-height: 1.6; opacity: 0; transition: opacity .4s; max-width: calc(100vw - 32px); }
+  .hint.show { opacity: 1; }
+  .hint kbd { font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line); background: rgba(255,255,255,0.06); }
+  .crosshair { position: fixed; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(255,255,255,.7); pointer-events: none; opacity: 0; transition: opacity .3s; }
+  .crosshair.show { opacity: .8; }
+  .fps { font-family: var(--mono); font-size: 11px; color: var(--muted); align-self: center; padding: 0 4px; font-variant-numeric: tabular-nums; }
+
+  .joy { position: fixed; left: 24px; bottom: calc(env(safe-area-inset-bottom, 0px) + 120px); width: 110px; height: 110px; border-radius: 50%; border: 1px solid var(--line); background: rgba(13,18,24,.35); pointer-events: none; display: none; }
+  .joy i { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; background: rgba(239,232,220,.4); }
+  .joy.show { display: block; }
+
+  #loader { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(120% 90% at 50% 110%, #3a2a24 0%, #141820 55%, #0b0f14 100%); z-index: 10; transition: opacity 1.2s ease; padding: 16px; }
+  #loader.done { opacity: 0; pointer-events: none; }
+  .ld { width: min(420px, 100%); display: grid; gap: 14px; }
+  .ld h1 { margin: 0; font-family: var(--serif); font-size: clamp(34px, 7vw, 52px); font-weight: 700; letter-spacing: 0.03em; }
+  .ld p { margin: 0; color: var(--muted); line-height: 1.6; font-size: 14px; max-width: 34em; }
+  .bar { height: 2px; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; }
+  #load-bar { height: 100%; background: linear-gradient(90deg, var(--amber), #ffe2a8); transform-origin: left; transform: scaleX(0); transition: transform .4s ease; }
+  #load-step { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  #err { position: fixed; left: 16px; right: 16px; bottom: 16px; padding: 12px 14px; border-radius: 12px; background: #3a1616; color: #ffd9d0; font-family: var(--mono); font-size: 12px; white-space: pre-wrap; z-index: 20; display: none; max-height: 40%; overflow: auto; }
+
+  @media (max-width: 640px) {
+    .brand h1 { font-size: 20px; }
+    .brand h1 small { display: none; }
+    .log { font-size: 11px; gap: 2px 10px; }
+    .seg button { padding: 7px 10px; font-size: 12px; }
+    .chips { max-width: 100%; }
+    .drawer { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); right: 16px; left: 16px; width: auto; max-height: 60%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hud, #loader, .hint, .drawer { transition: none; }
+  }
+</style>
+<!--BODY-->
+<canvas id="world" tabindex="0" aria-label="윤슬 항구 3D 월드"></canvas>
+
+<div id="loader" role="status" aria-live="polite">
+  <div class="ld">
+    <h1>윤슬 항구</h1>
+    <p>해 질 녘 빛이 물 위에 부서지는 작은 항구 도시. 지형, 물, 구름, 나무와 새들을 지금 이 자리에서 만들고 있어요.</p>
+    <div class="bar"><div id="load-bar"></div></div>
+    <div id="load-step">준비 중</div>
+  </div>
+</div>
+
+<div class="hud" id="hud">
+  <div class="top">
+    <div class="brand">
+      <h1>윤슬 항구 <small>Yunseul Harbor</small></h1>
+      <div class="log" aria-live="off">
+        <span>시각 <b id="lg-time">17:10</b></span>
+        <span>태양 고도 <b id="lg-elev">0°</b></span>
+        <span id="lg-wind-wrap"><b id="lg-wind">남서풍 3 m/s</b></span>
+      </div>
+    </div>
+    <div class="top-right">
+      <span class="fps" id="fps"></span>
+      <button class="icon-btn" id="btn-sound" aria-pressed="false" aria-label="소리 켜기" title="소리 (S)">
+        <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-settings" aria-pressed="false" aria-label="설정 열기" title="설정">
+        <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-hide" aria-label="UI 숨기기" title="UI 숨기기 (H)">
+        <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>
+      </button>
+    </div>
+  </div>
+  <div></div>
+  <div class="dock">
+    <div class="chips" id="views" role="group" aria-label="시점 이동"></div>
+    <div class="seg" id="modes" role="group" aria-label="이동 방식">
+      <button data-mode="orbit" aria-pressed="true">둘러보기</button>
+      <button data-mode="walk" aria-pressed="false">걷기</button>
+      <button data-mode="fly" aria-pressed="false">비행</button>
+      <button data-mode="cine" aria-pressed="false">시네마</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer" id="drawer" hidden>
+  <h2>하늘과 시간</h2>
+  <div class="row">
+    <label for="in-time">시각 <output id="out-time">16:51</output></label>
+    <input id="in-time" type="range" min="0" max="24" step="0.01" value="16.85">
+    <div style="display:flex; gap:6px; flex-wrap:wrap">
+      <button class="play" id="btn-flow" aria-pressed="false">시간 흐르게 하기</button>
+      <button class="play" data-t="6.1">새벽</button>
+      <button class="play" data-t="12.5">한낮</button>
+      <button class="play" data-t="17.2">노을</button>
+      <button class="play" data-t="21.5">밤</button>
+    </div>
+  </div>
+  <div class="row">
+    <label for="in-cloud">구름 <output id="out-cloud">42%</output></label>
+    <input id="in-cloud" class="plain" type="range" min="0" max="0.85" step="0.01" value="0.42">
+  </div>
+  <div class="row">
+    <label for="in-wind">바람 <output id="out-wind">3.2 m/s</output></label>
+    <input id="in-wind" class="plain" type="range" min="0" max="1" step="0.01" value="0.45">
+  </div>
+  <h2>화면</h2>
+  <div class="qual" id="qual" role="group" aria-label="그래픽 품질">
+    <button data-q="low">낮음</button>
+    <button data-q="medium">보통</button>
+    <button data-q="high">높음</button>
+    <button data-q="ultra">울트라</button>
+  </div>
+  <div class="toggles">
+    <button class="tg" id="tg-rays" aria-pressed="true">빛줄기</button>
+    <button class="tg" id="tg-bloom" aria-pressed="true">빛 번짐</button>
+    <button class="tg" id="tg-grade" aria-pressed="true">색 보정</button>
+    <button class="tg" id="tg-music" aria-pressed="false">잔잔한 음악</button>
+  </div>
+  <p class="note">마우스로 드래그해 돌아보고, 걷기와 비행에서는 화면을 클릭한 뒤 WASD로 움직여요. 숫자 1–7은 시점 이동, H는 UI 숨기기, T는 시간 흐름이에요.</p>
+</div>
+
+<div class="hint" id="hint"></div>
+<div class="crosshair" id="crosshair"></div>
+<div class="joy" id="joy"><i></i></div>
+<div id="err"></div>
