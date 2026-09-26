@@ -2,15 +2,20 @@
 // Boot + frame loop
 // ============================================================================
 
+const renderHealth = { contextLost: false, contextRestores: 0, shaderErrors: 0, frames: 0, errors: [] };
 function showError(msg) {
+  if (renderHealth.errors.includes(msg)) return;
+  renderHealth.errors.push(msg);
+  if (renderHealth.errors.length > 8) renderHealth.errors.shift();
   const e = $('err');
   if (!e) return;
   e.style.display = 'block';
-  e.textContent += msg + '\n';
+  e.textContent = renderHealth.errors.join('\n');
 }
 addEventListener('error', (e) => showError(String(e.message || e)));
 addEventListener('unhandledrejection', (e) => showError(String(e.reason && e.reason.stack || e.reason)));
 renderer.debug.onShaderError = (gl, program, vs, fs) => {
+  renderHealth.shaderErrors++;
   const log = gl.getProgramInfoLog(program) + '\n' + gl.getShaderInfoLog(vs) + '\n' + gl.getShaderInfoLog(fs);
   let ctx = '';
   for (const [sh, name] of [[vs, 'VS'], [fs, 'FS']]) {
@@ -26,7 +31,26 @@ renderer.debug.onShaderError = (gl, program, vs, fs) => {
   console.error(log);
 };
 
-const clockState = { last: performance.now(), t: 0, fpsAcc: 0, fpsN: 0, fpsShown: 0, slow: 0, checked: false };
+const clockState = { last: performance.now(), t: 0, elapsed: 0, frameMs: 0, fpsAcc: 0, fpsN: 0, fpsShown: 0, slow: 0, checked: false };
+// One frame includes the planar reflection, shadows, scene and every post pass.
+// The default automatic reset reports only the final fullscreen draw instead.
+renderer.info.autoReset = false;
+
+canvas.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  renderHealth.contextLost = true;
+  if (typeof showHint === 'function') showHint('그래픽 장치를 복구하는 중이에요');
+});
+canvas.addEventListener('webglcontextrestored', () => {
+  renderHealth.contextLost = false;
+  renderHealth.contextRestores++;
+  clockState.last = performance.now();
+  // Three.js restores scene resources. Refresh size-dependent targets and the
+  // sky environment, whose previous framebuffer content no longer exists.
+  if (composer) onResize();
+  if (skyMat) skyState.envDirty = true;
+  if (typeof showHint === 'function') showHint('도시의 빛과 화면을 복구했어요');
+});
 
 function updateShadowCamera() {
   const cam = camera.position;
@@ -59,8 +83,8 @@ function updateShadowCamera() {
 }
 
 function onResize() {
-  const w = innerWidth, h = innerHeight;
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2) * Qs.pr);
+  const w = Math.max(1, innerWidth), h = Math.max(1, innerHeight);
+  renderer.setPixelRatio(renderPixelRatio(w, h));
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
@@ -71,6 +95,7 @@ function onResize() {
 addEventListener('resize', onResize);
 
 function setQuality(name) {
+  if (!QUALITY[name]) return;
   qualityName = name;
   Qs = QUALITY[name];
   sunLight.shadow.mapSize.set(Qs.shadow, Qs.shadow);
@@ -79,7 +104,7 @@ function setQuality(name) {
   raysPass.maskMat.defines.SAMPLES = Qs.rays;
   raysPass.maskMat.needsUpdate = true;
   const rt1 = composer.renderTarget1, rt2 = composer.renderTarget2;
-  rt1.samples = Qs.msaa; rt2.samples = Qs.msaa;
+  rt1.samples = renderSamples(); rt2.samples = renderSamples();
   rt1.dispose(); rt2.dispose();
   if (typeof applyDensity === 'function') applyDensity();
   onResize();
@@ -88,10 +113,17 @@ function setQuality(name) {
 
 function frame(now) {
   requestAnimationFrame(frame);
-  let dt = (now - clockState.last) / 1000;
+  if (renderHealth.contextLost || renderer.getContext().isContextLost()) {
+    clockState.last = now;
+    return;
+  }
+  const rawDt = Math.max(0, (now - clockState.last) / 1000);
   clockState.last = now;
-  dt = Math.min(dt, 0.066);
+  const dt = Math.min(rawDt, 0.066);
+  clockState.elapsed += rawDt;
+  clockState.frameMs = rawDt * 1000;
   clockState.t += dt;
+  renderer.info.reset();
   const t = clockState.t;
   G.uTime.value = t;
   const w = G.uWind.value;
@@ -110,16 +142,19 @@ function frame(now) {
   renderer.shadowMap.needsUpdate = true;
   renderReflection();
   composer.render(dt);
+  renderHealth.frames++;
   if (typeof updateHud === 'function') updateHud(dt);
 
   // fps + one-time adaptive quality step down
-  clockState.fpsAcc += dt; clockState.fpsN++;
+  // Use wall-clock intervals for measurements; the simulation's capped delta
+  // otherwise falsely reports at least 15 fps even when rendering is slower.
+  clockState.fpsAcc += rawDt; clockState.fpsN++;
   if (clockState.fpsAcc > 0.5) {
     const fps = clockState.fpsN / clockState.fpsAcc;
     clockState.fpsShown = fps;
     const el = $('fps'); if (el) el.textContent = fps.toFixed(0) + ' fps';
     clockState.fpsAcc = 0; clockState.fpsN = 0;
-    if (!clockState.checked && t > 4) {
+    if (!clockState.checked && clockState.elapsed > 4) {
       if (fps < 24) clockState.slow++; else clockState.slow = 0;
       if (clockState.slow >= 4) {
         clockState.checked = true;
@@ -127,7 +162,7 @@ function frame(now) {
         const i = order.indexOf(qualityName);
         if (i < order.length - 1) { setQuality(order[i + 1]); showHint('부드럽게 보이도록 그래픽 품질을 한 단계 낮췄어요'); }
       }
-      if (t > 20) clockState.checked = true;
+      if (clockState.elapsed > 20) clockState.checked = true;
     }
   }
 }
@@ -154,7 +189,16 @@ async function boot() {
   });
   requestAnimationFrame((n) => { clockState.last = n; frame(n); });
   setTimeout(() => $('loader').classList.add('done'), 300);
-  window.__yp = { goToView, setMode, skyState, camera, CTRL, setQuality, G, postState, THREE, VIEWS };
+  window.__yp = { goToView, setMode, skyState, camera, CTRL, setQuality, G, postState, THREE, VIEWS,
+    scene, renderer, WATER, composer, renderHealth, walkInfo,
+    diagnostics: () => ({ ...renderHealth, quality: qualityName, hdr: RENDER_CAPS.hdr,
+      samples: composer.renderTarget1.samples, width: canvas.width, height: canvas.height,
+      reflection: WATER.uReflOn.value > 0, geometries: renderer.info.memory.geometries,
+      materials: { ...TEX.assetStatus },
+      textures: renderer.info.memory.textures, drawCalls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles, points: renderer.info.render.points,
+      fps: clockState.fpsShown, frameMs: clockState.frameMs }),
+  };
   window.__ready = true;
 }
 boot();

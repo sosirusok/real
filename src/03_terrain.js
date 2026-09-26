@@ -256,7 +256,7 @@ function makeTerrainMaterial() {
         float caus = pow(1.0 - abs(c1 - c2), 14.0);
         float sunUp = smoothstep(0.0, 0.3, uTrueSun.y);
         col *= mix(vec3(1.0), vec3(0.42, 0.66, 0.64), smoothstep(0.0, 3.5, depth));
-        col *= 1.0 + caus * 2.6 * exp(-depth * 0.25) * sunUp * smoothstep(0.3, -0.2, y);
+        col *= 1.0 + caus * 2.6 * exp(-depth * 0.25) * sunUp * (1.0 - smoothstep(-0.2, 0.3, y));
       }
       diffuseColor.rgb = col;
     `,

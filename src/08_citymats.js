@@ -15,6 +15,8 @@ const GLSL_FRAME = /* glsl */ `
 `;
 
 const FACADE_FRAG = /* glsl */ `
+  uniform sampler2D uFacadeSurface;
+  uniform float uFacadePhoto;
   varying vec2 vUvM;
   varying vec4 vF;
   varying vec4 vS;
@@ -26,8 +28,8 @@ const FACADE_FRAG = /* glsl */ `
   vec3 roomColor(vec2 qg, vec3 Vt, vec2 room0, vec2 room1, float depthR, float rs, float lit, float shop) {
     vec3 o = vec3(qg, 0.0);
     vec3 d = normalize(vec3(-Vt.x, -Vt.y, max(Vt.z, 0.05)));
-    float tx = ((d.x > 0.0 ? room1.x : room0.x) - o.x) / d.x;
-    float ty = ((d.y > 0.0 ? room1.y : room0.y) - o.y) / d.y;
+    float tx = abs(d.x) > 0.00001 ? ((d.x > 0.0 ? room1.x : room0.x) - o.x) / d.x : 100000.0;
+    float ty = abs(d.y) > 0.00001 ? ((d.y > 0.0 ? room1.y : room0.y) - o.y) / d.y : 100000.0;
     float tz = depthR / d.z;
     float t = min(min(tx, ty), tz);
     vec3 h = o + d * t;
@@ -84,6 +86,9 @@ const FACADE_FRAG = /* glsl */ `
     float n2 = texture2D(uNoise, (p + seed * 11.0) * 0.8).b;
     float n3 = texture2D(uNoise, p * 3.3).a;
     vec3 alb = wallC * (0.84 + 0.3 * n1) * (0.94 + 0.12 * n2);
+    vec2 photoUV = p * 0.22 + vec2(fract(seed * 7.13), fract(seed * 3.71));
+    vec3 plaster = texture2D(uFacadeSurface, photoUV).rgb;
+    alb = mix(alb, wallC * (plaster * 0.62 + 0.38) * (0.94 + 0.09 * n1), uFacadePhoto);
     float rough = 0.88;
     vec3 nt = vec3((n3 - 0.5) * 0.14, (n2 - 0.5) * 0.1, 1.0);
     vec3 emis = vec3(0.0);
@@ -253,6 +258,10 @@ function makeFacadeMaterial() {
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 });
   patch(mat, {
     key: 'facade',
+    uniforms: {
+      uFacadeSurface: { value: TEX.generatedPlaster || TEX.noise },
+      uFacadePhoto: { value: TEX.generatedPlaster ? 1 : 0 },
+    },
     vHead: 'attribute vec4 aF; attribute vec4 aS; varying vec2 vUvM; varying vec4 vF; varying vec4 vS; varying vec3 vNW;',
     vEnd: 'vUvM = uv; vF = aF; vS = aS; vNW = normalize(mat3(modelMatrix) * objectNormal);',
     fHead: FACADE_FRAG,
@@ -358,23 +367,23 @@ function makeStoneMaterial() {
       vec3 sAlb; float sRough; vec3 sNT;
       void stone() {
         vec2 p = vUvM;
-        float row = floor(p.y / 0.42);
-        float by = fract(p.y / 0.42);
-        float len = 0.9 + 0.35 * hash11(row * 3.1);
+        float row = floor(p.y / 0.72);
+        float by = fract(p.y / 0.72);
+        float len = 1.8 + 0.2 * hash11(row * 3.1);
         float bx = fract(p.x / len + hash11(row) );
         float id = floor(p.x / len + hash11(row));
         float hb = hash12(vec2(id, row));
-        float m = min(min(bx, 1.0 - bx) * len, min(by, 1.0 - by) * 0.42);
+        float m = min(min(bx, 1.0 - bx) * len, min(by, 1.0 - by) * 0.72);
         float n1 = texture2D(uNoise, p * 0.7).b;
         float n2 = texture2D(uNoise, p * 0.08).r;
-        vec3 c = vColor.rgb * (0.78 + 0.34 * hb) * (0.85 + 0.3 * n1) * (0.9 + 0.2 * n2);
-        c = mix(c * 0.45, c, smoothstep(0.0, 0.03, m));
+        vec3 c = mix(vColor.rgb, vec3(0.72, 0.70, 0.64), 0.30) * (0.95 + 0.09 * hb) * (0.97 + 0.06 * n1);
+        c = mix(c * 0.82, c, smoothstep(0.0, 0.015, m));
         float y = vWPos.y;
         float wet = 1.0 - smoothstep(0.1, 0.6, y - sin(uTime * 0.8 + vWPos.x * 0.1) * 0.08);
         c = mix(c, c * vec3(0.45, 0.5, 0.42), wet);
         float algae = smoothstep(-0.9, -0.1, y) * (1.0 - smoothstep(-0.1, 0.45, y));
         c = mix(c, vec3(0.1, 0.16, 0.08), algae * 0.75);
-        float moss = smoothstep(0.62, 0.85, texture2D(uNoise, p * 0.15).g) * smoothstep(3.5, 0.5, y);
+        float moss = smoothstep(0.62, 0.85, texture2D(uNoise, p * 0.15).g) * (1.0 - smoothstep(0.5, 3.5, y));
         c = mix(c, vec3(0.16, 0.22, 0.08), moss * 0.4);
         sAlb = c;
         sRough = mix(0.85, 0.3, wet);
@@ -395,19 +404,33 @@ function makeStoneMaterial() {
 
 // --- paving (roads, walks) uses baked textures with world-space uv ---------------
 function makePavingMaterial(set, key, extra = {}) {
+  if (key === 'cobble') {
+    // Quiet mineral paving, with broad saw-cut joints instead of a busy cobble grid.
+    const mat = new THREE.MeshStandardMaterial({ color: '#a9aaa3', roughness: 0.89, metalness: 0, ...extra });
+    patch(mat, { key: 'mineral-promenade', fColor: /* glsl */ `
+      vec2 p = vWPos.xz;
+      float grit = texture2D(uNoise, p * 1.9).b;
+      float broad = texture2D(uNoise, p * 0.022).g;
+      diffuseColor.rgb *= 0.96 + 0.055 * grit + 0.045 * broad;
+      vec2 cell = abs(fract(p / 3.6) - 0.5) * 3.6;
+      float joint = 1.0 - smoothstep(0.009, 0.024 + length(fwidth(p)), min(cell.x, cell.y));
+      diffuseColor.rgb *= 1.0 - joint * 0.10;
+    ` });
+    return mat;
+  }
   const mat = new THREE.MeshStandardMaterial({
     map: set.map, normalMap: set.normalMap, roughnessMap: set.orm, aoMap: set.orm,
-    normalScale: new THREE.Vector2(1, 1), roughness: 1, metalness: 0, aoMapIntensity: 1, ...extra,
+      normalScale: new THREE.Vector2(0.35, 0.35), roughness: set.orm ? 1 : 0.83, metalness: 0, aoMapIntensity: 0.35, ...extra,
   });
   patch(mat, {
     key,
     fColor: /* glsl */ `
       float pvN = texture2D(uNoise, vWPos.xz * 0.02).r;
-      diffuseColor.rgb *= 0.86 + 0.28 * pvN;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.64, 0.62, 0.55), 0.36) * (0.97 + 0.06 * pvN);
       // wet sheen along gutters / low spots
       float wetP = smoothstep(0.68, 0.9, texture2D(uNoise, vWPos.xz * 0.045).g);
     `,
-    fRough: 'roughnessFactor = mix(roughnessFactor, 0.28, wetP * 0.7);',
+    fRough: 'roughnessFactor = mix(roughnessFactor, 0.62, wetP * 0.3);',
   });
   return mat;
 }

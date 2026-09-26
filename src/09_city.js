@@ -94,6 +94,8 @@ function wgBlockOriented(cx, cz, w, d, rot, pad = 0.3) {
   });
 }
 function cityWalkInfo(x, z) {
+  const precise = typeof interiorWalkInfo === 'function' ? interiorWalkInfo(x, z) : null;
+  if (precise) return precise;
   const i = Math.floor(x - WG.x0), j = Math.floor(z - WG.z0);
   if (i < 0 || j < 0 || i >= WG.w || j >= WG.h) { const h = heightAt(x, z); return { h, blocked: h < 0.25 }; }
   const k = j * WG.w + i;
@@ -107,10 +109,222 @@ const ROOF_SLATE = ['#4c525b', '#434951', '#5a5f66'].map(srgb);
 const AWNING = [['#2f5d4a', '#efe6d2'], ['#9c3a2e', '#f1e7d4'], ['#27405e', '#f0ead8'], ['#c68a2e', '#f2ead6'], ['#5b3a52', '#eee4d2']].map(([a, b]) => [srgb(a), srgb(b)]);
 const TRIM = srgb('#ddd4c4');
 
+const MODERN_PALETTE = ['#eee9dd', '#d8d7c9', '#c4cbbd', '#e4dccd', '#d0d9d4', '#f3eee3'].map(srgb);
+const MODERN_BRONZE = srgb('#55564c');
+const MODERN_GLASS = ['#96a69b', '#a4ada0', '#8b9b92', '#b0b5a7'].map(srgb);
+const MODERN_LEAF = new THREE.SphereGeometry(1, 8, 5);
+
+// City addresses and hillside placements are already referenced by saved views.
+// Preserve the former generator's random-stream consumption while architecture
+// itself uses only its supplied seed, so the makeover does not move the city.
+function preserveBuildingLayoutSequence(o) {
+  if (o.roof === 'flat' && o.w > 7 && o.d > 7) { rand(); rand(); if (rand() < 0.6) { rand(); rand(); rand(); } }
+  if (o.roof !== 'flat' && o.floors >= 2) {
+    const count = 1 + (rand() < 0.5 ? 1 : 0);
+    for (let i = 0; i < count; i++) { rand(); rand(); rand(); rand(); }
+  }
+  const n = Math.max(1, Math.floor(o.w / 3.1 + 0.3));
+  if (o.balMode > 0 && o.balMode !== 3 && o.floors >= 2) {
+    for (let f = 1; f < o.floors; f++) for (let b = 0; b < n; b++) if (o.balMode !== 2 || b === Math.floor(n / 2)) rand();
+  }
+  if (o.flowers && o.floors >= 2) for (let f = 1; f < o.floors; f++) for (let b = 0; b < n; b++) {
+    if (rand() > 0.4) continue;
+    if (o.balMode === 1 || (o.balMode === 2 && b === Math.floor(n / 2)) || (o.balMode === 3 && f === 1)) continue;
+    rand();
+  }
+}
+
+// Six distinct contemporary coastal forms. Upper glazing is opaque physically
+// shaded geometry, keeping reflections and avoiding city-wide alpha overdraw.
+// Ground floors remain the real, furnished, openable rooms from interiors.js.
+function addModernBuilding(o) {
+  preserveBuildingLayoutSequence(o);
+  const style = Math.abs(Math.floor(o.seed * 19.17 + Math.abs(o.cx) * 0.037 + Math.abs(o.cz) * 0.051)) % 6;
+  const white = MODERN_PALETTE[Math.floor(o.seed * 3.71) % MODERN_PALETTE.length];
+  const glass = MODERN_GLASS[Math.floor(o.seed) % MODERN_GLASS.length];
+  const sage = srgb('#b1bdad'), oak = srgb('#b0a081'), paving = srgb('#dbd8cd');
+  o.modern = true; o.modernStyle = style; o.color = white;
+  const c = Math.cos(o.rot), s = Math.sin(o.rot), w = o.w, d = o.d, hw = w / 2, hd = d / 2;
+  const H = 4.2 + Math.max(0, o.floors - 1) * o.fh;
+  const L = (x, y, z) => new V3(o.cx + x * c + z * s, o.baseY + y, o.cz - x * s + z * c);
+  const UV = (p, n) => worldUV(p, n).map(v => v / 3.4);
+  const B = (kind, x, y, z, sx, sy, sz, color = white, properties = [0.75, 0, 0]) => {
+    const p = L(x, y, z); boxW(tb(kind, o.cx, o.cz), p.x, p.y, p.z, sx, sy, sz, o.rot, color, kind === 'props' ? { aP: properties } : {}, 'px nx py ny pz nz', UV);
+  };
+  const pane = (x, y, z, sx, sy, sz = 0.06) => B('props', x, y, z, sx, sy, sz, glass, [0.25, 0.27, 0.0]);
+  const edge = (x, y, z, sx, sy, sz) => B('roomMetal', x, y, z, sx, sy, sz, MODERN_BRONZE);
+  const roundShape = (sx, sz, radius) => {
+    const x = sx / 2, z = sz / 2, r = Math.min(radius, x - 0.04, z - 0.04), p = new THREE.Shape();
+    p.moveTo(-x + r, -z); p.lineTo(x - r, -z); p.quadraticCurveTo(x, -z, x, -z + r);
+    p.lineTo(x, z - r); p.quadraticCurveTo(x, z, x - r, z); p.lineTo(-x + r, z); p.quadraticCurveTo(-x, z, -x, z - r);
+    p.lineTo(-x, -z + r); p.quadraticCurveTo(-x, -z, -x + r, -z); return p;
+  };
+  const rounded = (kind, x, y, z, sx, sy, sz, radius, color, properties = [0.8, 0, 0]) => {
+    const g = new THREE.ExtrudeGeometry(roundShape(sx, sz, radius), { depth: sy, bevelEnabled: false, curveSegments: 5, steps: 1 });
+    g.rotateX(-Math.PI / 2);
+    const p = L(x, y, z); addGeo(tb(kind, o.cx, o.cz), g, p.x, p.y, p.z, o.rot, 1, color, kind === 'props' ? { aP: properties } : {}); g.dispose();
+  };
+  const ribbon = (x, y, z, sx, sz, radius, h, color = glass, properties = [0.27, 0.23, 0]) => {
+    const points = roundShape(sx, sz, radius).getPoints(5), b = tb('props', o.cx, o.cz);
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i], q = points[i + 1];
+      quadW(b, L(x + a.x, y, z - a.y), L(x + q.x, y, z - q.y), L(x + q.x, y + h, z - q.y), L(x + a.x, y + h, z - a.y), color, { aP: properties }, UV);
+    }
+  };
+  const shrub = (x, y, z, size = 0.65) => {
+    const p = L(x, y + size * 0.48, z);
+    addGeo(tb('props', o.cx, o.cz), MODERN_LEAF, p.x, p.y, p.z, o.rot + o.seed, new V3(size, size * 0.72, size * 0.78), srgb('#879674'), { aP: [0.97, 0, 0] });
+  };
+  const planter = (x, y, z, sx = 2.2, sz = 0.8) => {
+    B('roomPlaster', x, y + 0.19, z, sx, 0.38, sz, sage);
+    B('props', x, y + 0.385, z, sx - 0.13, 0.025, sz - 0.12, srgb('#596e50'));
+    shrub(x - sx * 0.22, y + 0.35, z, Math.min(0.6, sz * 0.8)); shrub(x + sx * 0.23, y + 0.35, z, Math.min(0.7, sz * 0.85));
+  };
+  const roofGarden = (x, y, z, sx, sz) => {
+    B('roomPlaster', x, y + 0.1, z, sx, 0.2, sz, paving);
+    B('props', x, y + 0.215, z, Math.max(1, sx - 0.65), 0.025, Math.max(1, sz - 0.65), srgb('#a4ad91'));
+    planter(x - sx * 0.25, y + 0.23, z + sz * 0.27, Math.max(1.1, sx * 0.35), 0.9);
+    planter(x + sx * 0.24, y + 0.23, z - sz * 0.25, Math.max(1.1, sx * 0.32), 0.85);
+  };
+  const front = (x, floor, z, sx, height, color = white, fins = false) => {
+    // Full-height panes sit behind a slim structural frame with metre-scale bays.
+    pane(x, floor + height / 2, z, sx - 0.4, height - 0.34);
+    B('roomPlaster', x, floor + 0.12, z + 0.035, sx, 0.24, 0.21, color);
+    B('roomPlaster', x, floor + height - 0.12, z + 0.035, sx, 0.24, 0.23, color);
+    const bays = Math.max(2, Math.round(sx / 2.2));
+    for (let b = 0; b <= bays; b++) {
+      const px = x - sx / 2 + 0.2 + b * (sx - 0.4) / bays;
+      edge(px, floor + height / 2, z + 0.045, 0.052, height - 0.25, 0.095);
+      if (fins && b < bays) B('roomWood', px + 0.24, floor + height / 2, z + 0.19, 0.085, height - 0.16, 0.48, oak);
+    }
+  };
+  const volume = (x, floor, z, sx, height, sz, color = white, fins = false) => {
+    B('roomPlaster', x, floor + height / 2, z, sx, height, sz, color);
+    front(x, floor, z + sz / 2 + 0.01, sx - 0.15, height, color, fins);
+    front(x, floor, z - sz / 2 - 0.015, sx - 0.18, height, color, false);
+    // Exposed return glazing and horizontal reveals wrap the corner.
+    for (const side of [-1, 1]) {
+      pane(x + side * (sx / 2 + 0.014), floor + height * 0.52, z + sz * 0.19, 0.055, height * 0.66, sz * 0.5);
+      for (let j = 0; j < 3; j++) edge(x + side * (sx / 2 + 0.047), floor + height * 0.52, z - sz * 0.06 + j * sz * 0.25, 0.07, height * 0.67, 0.052);
+    }
+  };
+
+  if (style === 0) {
+    // Soft rounded corners with continuous projecting ribbon terraces.
+    for (let f = 1; f < o.floors; f++) {
+      const y = 4.2 + (f - 1) * o.fh;
+      rounded('props', 0, y, -0.3, w - 0.8, o.fh, d - 0.7, 1.05, glass, [0.25, 0.26, 0]);
+      rounded('roomPlaster', 0, y - 0.07, 0.1, w + 0.13, 0.25, d + 0.2, 1.22, white);
+      ribbon(0, y + 0.19, 0.1, w + 0.02, d + 0.06, 1.2, 0.81);
+      ribbon(0, y + 0.99, 0.1, w + 0.03, d + 0.07, 1.2, 0.055, MODERN_BRONZE, [0.4, 0.6, 0]);
+      for (let x = -hw + 1.1; x < hw - 0.5; x += 1.8) edge(x, y + o.fh * 0.53, hd - 0.61, 0.06, o.fh - 0.18, 0.09);
+      if (f === 1 || f === o.floors - 1) planter(-w * 0.23, y + 0.18, hd - 0.18, w * 0.34, 0.8);
+    }
+    rounded('roomPlaster', 0, H, 0, w + 0.16, 0.25, d + 0.22, 1.25, white);
+    roofGarden(0, H + 0.24, -0.25, w - 0.7, d - 0.8);
+  } else if (style === 1) {
+    // Each storey recedes to expose a deep planted terrace, not painted setbacks.
+    for (let f = 1; f < o.floors; f++) {
+      const y = 4.2 + (f - 1) * o.fh, setback = (f - 1) * 0.73;
+      const sw = Math.max(w * 0.61, w - (f - 1) * 0.5), sd = Math.max(d * 0.53, d - setback * 1.3), z = -setback * 0.4;
+      B('roomPlaster', 0, y + 0.09, z + 0.32, sw + 0.18, 0.22, sd + 0.75, white);
+      volume(0, y + 0.18, z - 0.35, sw, o.fh - 0.18, sd - 0.7, f % 2 ? white : sage);
+      planter(-sw * 0.26, y + 0.21, z + sd / 2 + 0.21, sw * 0.38, 0.65);
+      edge(sw * 0.15, y + 0.92, z + sd / 2 + 0.32, sw * 0.59, 0.055, 0.055);
+    }
+    const inset = Math.max(0, o.floors - 2) * 0.73;
+    roofGarden(0, H, -inset * 0.4 - 0.35, Math.max(w * 0.61, w - Math.max(0, o.floors - 2) * 0.5), Math.max(d * 0.53, d - inset * 1.3) - 0.7);
+  } else if (style === 2) {
+    // Timber solar screens, long glazing, and a visibly floating pergola crown.
+    for (let f = 1; f < o.floors; f++) {
+      const y = 4.2 + (f - 1) * o.fh;
+      volume(0, y, -0.17, w - 0.16, o.fh, d - 0.34, white, true);
+      // A broad pale timber wall, with separate fine battens, balances the
+      // glazed right-hand bay and gives this family a residential pavilion face.
+      B('roomPlaster', -w * 0.255, y + o.fh / 2, hd - 0.16, w * 0.43, o.fh - 0.28, 0.19, srgb('#d6c6a6'));
+      for (let x = -hw + 0.37; x < -w * 0.055; x += 0.49) B('roomWood', x, y + o.fh / 2, hd - 0.045, 0.038, o.fh - 0.3, 0.06, srgb('#d5c9ad'));
+      for (let x = -hw + 0.44; x < -0.15; x += 0.31) B('roomWood', x, y + o.fh / 2, hd + 0.21, 0.075, o.fh - 0.1, 0.44, oak);
+      B('roomPlaster', 0, y - 0.07, 0, w + 0.1, 0.19, d + 0.1, paving);
+    }
+    roofGarden(0, H, -0.1, w, d - 0.2);
+    for (const x of [-hw + 0.5, hw - 0.5]) for (const z of [-hd + 0.6, hd - 0.8]) edge(x, H + 0.82, z, 0.075, 1.6, 0.075);
+    for (let x = -hw + 0.25; x < hw; x += 0.53) B('roomWood', x, H + 1.62, -0.08, 0.13, 0.14, d - 0.6, oak);
+  } else if (style === 3) {
+    // A glazed gallery beneath a thin roof wing and asymmetrical solid service core.
+    if (o.floors > 1) {
+      const tall = H - 4.2;
+      B('props', -0.32, 4.2 + tall / 2, -0.1, w - 0.85, tall, d - 0.35, glass, [0.24, 0.3, 0]);
+      B('roomPlaster', hw - 0.75, 4.2 + tall / 2, -0.1, 1.35, tall + 0.12, d - 0.15, white);
+      for (let x = -hw + 0.28; x < hw - 1.2; x += 1.7) edge(x, 4.2 + tall / 2, hd - 0.23, 0.055, tall, 0.1);
+      for (let f = 1; f < o.floors; f++) {
+        const y = 4.2 + (f - 1) * o.fh;
+        edge(-0.6, y + 0.12, hd - 0.22, w - 1.6, 0.09, 0.13);
+        B('roomPlaster', -0.42, y + 0.03, 0, w - 0.92, 0.12, d - 0.32, paving);
+      }
+    }
+    B('roomPlaster', 0, H + 0.12, 0.2, w + 0.35, 0.24, d + 0.7, white);
+    roofGarden(-0.4, H + 0.24, -0.2, w - 1.2, d - 1.2);
+    B('roomWood', -w * 0.18, H + 1.18, -0.45, w * 0.5, 0.11, d * 0.5, oak);
+    for (const x of [-w * 0.4, w * 0.04]) edge(x, H + 0.8, -0.45, 0.06, 0.76, d * 0.4);
+  } else if (style === 4) {
+    // Alternating cantilevered wings leave open loggias on opposite sides.
+    for (let f = 1; f < o.floors; f++) {
+      const y = 4.2 + (f - 1) * o.fh, side = f % 2 ? -1 : 1, x = side * w * 0.12, z = f % 2 ? 0.28 : -0.43;
+      const sw = w * (f === o.floors - 1 ? 0.68 : 0.75), sd = d * 0.86;
+      volume(x, y, z, sw, o.fh, sd, f % 2 ? white : sage);
+      B('roomPlaster', x, y - 0.08, z + 0.18, sw + 0.38, 0.26, sd + 0.55, white);
+      // Solid warm-rendered wings with one generous punched window contrast
+      // with the all-glazed gallery and the continuous curved ribbon family.
+      B('roomPlaster', x, y + o.fh / 2, z + sd / 2 + 0.09, sw - 0.13, o.fh - 0.28, 0.18, srgb(f % 2 ? '#e9e0cc' : '#d8d9c9'));
+      pane(x + sw * 0.14, y + o.fh * 0.54, z + sd / 2 + 0.22, sw * 0.49, o.fh * 0.57);
+      for (const xx of [x - sw * 0.105, x + sw * 0.385]) edge(xx, y + o.fh * 0.54, z + sd / 2 + 0.257, 0.042, o.fh * 0.59, 0.045);
+      B('roomPlaster', x + sw * 0.14, y + o.fh * 0.245, z + sd / 2 + 0.23, sw * 0.52, 0.07, 0.22, white);
+      B('roomWood', x - sw * 0.335, y + o.fh / 2, z + sd / 2 + 0.22, sw * 0.18, o.fh - 0.47, 0.12, srgb('#d1c4a8'));
+      planter(-side * w * 0.32, y + 0.07, hd - 1.02, w * 0.28, 0.86);
+      if (f === o.floors - 1) roofGarden(x, H, z, sw + 0.08, sd);
+    }
+    if (o.floors <= 1) roofGarden(0, H, 0, w, d);
+  } else {
+    // Twin pavilion wings joined at the back, with a genuine central roof court.
+    const wingW = w * 0.35, offset = w * 0.305;
+    for (let f = 1; f < o.floors; f++) {
+      const y = 4.2 + (f - 1) * o.fh;
+      volume(-offset, y, 0, wingW, o.fh, d - 0.25, white);
+      if (f < o.floors - 1 || o.floors <= 2) volume(offset, y, -0.25, wingW, o.fh, d - 0.75, sage);
+      B('roomPlaster', 0, y + o.fh / 2, -hd + 1.0, w * 0.65, o.fh, 1.8, white);
+      if (f % 2 === 0) {
+        pane(0, y + 0.54, 0.1, w * 0.35, 0.95, 0.06);
+        B('roomPlaster', 0, y + 0.02, -0.3, w * 0.37, 0.18, 1.05, paving);
+      }
+    }
+    if (o.floors > 1) {
+      roofGarden(-offset, H, 0, wingW + 0.06, d - 0.23);
+      roofGarden(offset, o.floors > 2 ? H - o.fh : H, -0.25, wingW + 0.06, d - 0.73);
+      planter(0, 4.25, hd * 0.4, Math.max(1, w * 0.2), 1.0);
+    } else roofGarden(0, H, 0, w, d);
+  }
+  o.roof = 'flat'; o.shutI = 0; o.balMode = 0; o.quoins = false; o.flowers = false;
+  const room = typeof registerInterior === 'function' ? registerInterior(o) : null;
+  CITYDATA.buildings.push({ cx: o.cx, cz: o.cz, w, d, rot: o.rot, H: H + (style === 2 ? 1.8 : 1.3), room, modern: true, modernStyle: style });
+  CITYDATA.modernStyles = CITYDATA.modernStyles || [0, 0, 0, 0, 0, 0]; CITYDATA.modernStyles[style]++;
+  if (!room) wgBlockOriented(o.cx, o.cz, w, d, o.rot, 0.2);
+}
+
 // --- one building -----------------------------------------------------------------
 // o: {cx, cz, w, d, rot, baseY, floors, fh, color, roof, roofColor, roofStyle,
 //     party:{left,right,back}, gType, shutI, wStyle, balMode, quoins, seed, awning, flowers}
 function addBuilding(o) {
+  // On natural ground the entire floor must clear the footprint. Keeper/chapel
+  // origins used the centre height, which can put terrain through their rooms.
+  if (o.plinth > 0) {
+    const c0 = Math.cos(o.rot), s0 = Math.sin(o.rot);
+    let support = o.baseY;
+    for (const x of [-o.w / 2, 0, o.w / 2]) for (const z of [-o.d / 2, 0, o.d / 2]) {
+      support = Math.max(support, heightAt(o.cx + x * c0 + z * s0, o.cz - x * s0 + z * c0) + 0.1);
+    }
+    o.plinth += support - o.baseY; o.baseY = support;
+  }
+  if (!o.historic) return addModernBuilding(o);
   const gh = 4.2;
   const H = o.floors <= 1 ? gh : gh + (o.floors - 1) * o.fh;
   const c = Math.cos(o.rot), s = Math.sin(o.rot);
@@ -129,10 +343,13 @@ function addBuilding(o) {
   for (const wl of walls) {
     const flags = (wl.party ? 1 : 0) + (o.quoins ? 2 : 0) + (wl === walls[0] ? o.balMode * 4 : 0);
     const ex = { aF: [o.seed, o.fh, o.floors, wl.W], aS: [wl.g, o.shutI, o.wStyle, flags] };
-    const p0 = L(wl.a[0], -plinthDrop, wl.a[1]), p1 = L(wl.b[0], -plinthDrop, wl.b[1]);
+    // Ground floors are thick, openable geometry constructed by registerInterior.
+    // Retain the efficient upper-storey material with its original world-height UVs.
+    const bottom = typeof registerInterior === 'function' ? gh : -plinthDrop;
+    const p0 = L(wl.a[0], bottom, wl.a[1]), p1 = L(wl.b[0], bottom, wl.b[1]);
     const p2 = L(wl.b[0], topWall, wl.b[1]), p3 = L(wl.a[0], topWall, wl.a[1]);
     const n = new V3().subVectors(p1, p0).cross(new V3().subVectors(p2, p0)).normalize();
-    wb.quad(p0, p1, p2, p3, n, [[0, -plinthDrop], [wl.W, -plinthDrop], [wl.W, topWall], [0, topWall]], o.color, ex);
+    wb.quad(p0, p1, p2, p3, n, [[0, bottom], [wl.W, bottom], [wl.W, topWall], [0, topWall]], o.color, ex);
   }
   const trimC = o.trim || TRIM;
   const pbEx = { aP: [0.75, 0, 0] };
@@ -287,7 +504,7 @@ function addBuilding(o) {
       const n2 = new V3().subVectors(e2, e1).cross(new V3().subVectors(e3, e1)).normalize().negate();
       fb.quad(e4, e3, e2, e1, n2, [[0, 1], [aw, 1], [aw, 1], [0, 1]], ca, { aC: [cb[0], cb[1], cb[2], 1] });
     }
-  } else if (o.gType === 0) {
+  } else if (o.gType === 0 && typeof registerInterior !== 'function') {
     // doorstep
     const cx = -w / 2 + (Math.floor(nb / 2) + 0.5) * bw;
     boxW(pb, ...L(cx, 0.08, d / 2 + 0.25).toArray(), 1.6, 0.16, 0.5, o.rot, srgb('#9d968b'), { aP: [0.85, 0, 0] });
@@ -306,8 +523,11 @@ function addBuilding(o) {
       CITYDATA.flowerBoxes.push({ p: L(cx, y + 0.02, d / 2 + 0.2), w: ww, rot: o.rot, kind: Math.floor(rand() * 4) });
     }
   }
-  CITYDATA.buildings.push({ cx: o.cx, cz: o.cz, w, d, rot: o.rot, H: ridgeY });
-  wgBlockOriented(o.cx, o.cz, w, d, o.rot, 0.2);
+  const room = typeof registerInterior === 'function' ? registerInterior(o) : null;
+  CITYDATA.buildings.push({ cx: o.cx, cz: o.cz, w, d, rot: o.rot, H: ridgeY, room });
+  // Detailed rooms provide their own capsule collision. Blocking their entire
+  // footprint in the coarse grid leaves a 0.5 m invisible lip across doorways.
+  if (!room) wgBlockOriented(o.cx, o.cz, w, d, o.rot, 0.2);
 }
 
 // --- block generation --------------------------------------------------------------
@@ -377,7 +597,7 @@ function genCityBlock(b) {
       if (sd.dir === 'w') { const t = pl; pl = pr; pr = t; }
       if (sd.dir === 'e' || sd.dir === 'w') { pl = true; pr = true; }
       addBuilding({
-        cx, cz, w: lw, d, rot: sd.rot, baseY: CITY.walk - 0.02, floors, fh: rr(3.0, 3.4),
+        cx, cz, w: lw, d, rot: sd.rot, baseY: CITY.walk - 0.02, floors, fh: rr(3.0, 3.4), corner,
         color: pick(WALL_COLS), roof, roofColor: slate ? pick(ROOF_SLATE) : pick(ROOF_CLAY), roofStyle: slate ? 1 : 0,
         pitch: slate ? rr(0.7, 0.85) : rr(0.5, 0.62),
         party: { left: pl, right: pr, back: false }, gType, shutI: rand() < 0.55 ? 1 + Math.floor(rand() * 4) : 0,
@@ -539,26 +759,36 @@ function buildBridge(zc, halfW, hump, parX = 13) {
 // --- lamps, benches, trees along streets -------------------------------------------
 function addLamp(x, z, y = CITY.walk, style = 0) {
   const b = tb('props', x, z);
-  const iron = srgb('#1f2a26');
-  const ex = { aP: [0.45, 0.6, 0] };
-  const pole = new THREE.CylinderGeometry(0.055, 0.085, 3.7, 8, 1, true);
-  addGeo(b, pole, x, y + 1.85, z, 0, 1, iron, ex);
-  addGeo(b, new THREE.CylinderGeometry(0.16, 0.2, 0.45, 8), x, y + 0.22, z, 0, 1, iron, ex);
-  // lantern
-  addGeo(b, new THREE.CylinderGeometry(0.22, 0.13, 0.5, 6), x, y + 3.95, z, 0, 1, srgb('#ffd9a0'), { aP: [0.15, 0, 7] });
-  addGeo(b, new THREE.ConeGeometry(0.3, 0.28, 6), x, y + 4.34, z, 0, 1, iron, ex);
-  addGeo(b, new THREE.SphereGeometry(0.06, 6, 4), x, y + 4.5, z, 0, 1, iron, ex);
-  CITYDATA.lamps.push(new V3(x, y + 3.95, z));
+  const iron = srgb('#5b655f');
+  const ex = { aP: [0.5, 0.45, 0] };
+  const pole = new THREE.CylinderGeometry(0.045, 0.062, 3.72, 12, 1, true);
+  addGeo(b, pole, x, y + 1.86, z, 0, 1, iron, ex); pole.dispose();
+  // A slim disc luminaire, with a recessed warm underside instead of a lantern.
+  const cap = new THREE.CylinderGeometry(0.31, 0.33, 0.085, 20);
+  addGeo(b, cap, x, y + 3.74, z, 0, 1, iron, ex); cap.dispose();
+  const diffuser = new THREE.CylinderGeometry(0.271, 0.271, 0.018, 20);
+  addGeo(b, diffuser, x, y + 3.687, z, 0, 1, srgb('#ffe6bf'), { aP: [0.3, 0, 5] }); diffuser.dispose();
+  const foot = new THREE.CylinderGeometry(0.073, 0.09, 0.14, 12);
+  addGeo(b, foot, x, y + 0.07, z, 0, 1, iron, ex); foot.dispose();
+  CITYDATA.lamps.push(new V3(x, y + 3.69, z));
   wgSet(x - 0.3, z - 0.3, x + 0.3, z + 0.3, null, 1);
 }
 function addBench(x, z, rot, y = CITY.walk) {
   const wd = tb('wood', x, z), pb = tb('props', x, z);
   const c = Math.cos(rot), s = Math.sin(rot);
   const L = (lx, lz) => [x + lx * c + lz * s, z - lx * s + lz * c];
-  const wc = srgb('#8a6444');
+  const wc = srgb('#c5b393');
   for (let k = 0; k < 3; k++) { const [px, pz] = L(0, -0.2 + k * 0.17); boxW(wd, px, y + 0.45, pz, 1.8, 0.04, 0.13, rot, wc); }
   for (let k = 0; k < 2; k++) { const [px, pz] = L(0, -0.33 - 0.02); boxW(wd, px, y + 0.62 + k * 0.17, pz - 0 + 0, 1.8, 0.12, 0.04, rot, wc); }
-  for (const sx of [-0.8, 0.8]) { const [px, pz] = L(sx, -0.05); boxW(pb, px, y + 0.3, pz, 0.06, 0.6, 0.5, rot, srgb('#20262a'), { aP: [0.5, 0.6, 0] }); }
+  for (const sx of [-0.68, 0.68]) {
+    const [px, pz] = L(sx, -0.02);
+    const support = new THREE.CylinderGeometry(0.13, 0.16, 0.41, 12);
+    addGeo(pb, support, px, y + 0.205, pz, rot, 1, srgb('#c5c9bd'), { aP: [0.84, 0, 0] }); support.dispose();
+  }
+  for (const sx of [-0.85, 0.85]) {
+    const [px, pz] = L(sx, 0);
+    boxW(pb, px, y + 0.66, pz, 0.035, 0.035, 0.49, rot, srgb('#6b7064'), { aP: [0.45, 0.55, 0] });
+  }
   CITYDATA.benches.push({ x, z, rot });
 }
 
@@ -612,6 +842,7 @@ function buildStreetProps() {
 // --- materials + mesh assembly -------------------------------------------------------
 function finalizeCity() {
   const matFor = { walls: MATS.facade, roofs: MATS.roof, stone: MATS.stone, cobble: MATS.cobble, flag: MATS.flag, props: MATS.props, rail: MATS.rail, wood: MATS.wood, fabric: MATS.fabric };
+  for (const kind of ['roomWood', 'roomStone', 'roomPlaster', 'roomTrim', 'roomMetal', 'roomGlass']) matFor[kind] = MATS[kind];
   const group = new THREE.Group();
   for (const [, b] of TB) {
     if (!b.vcount) continue;
@@ -620,7 +851,7 @@ function finalizeCity() {
       // aoMap uses uv; generate tangents-free normal mapping (three computes from derivatives)
     }
     const m = new THREE.Mesh(g, matFor[b.kind]);
-    m.castShadow = !(b.kind === 'cobble' || b.kind === 'flag');
+    m.castShadow = !(b.kind === 'cobble' || b.kind === 'flag' || b.kind === 'roomGlass');
     m.receiveShadow = true;
     if (b.kind === 'rail') m.customDepthMaterial = undefined;
     group.add(m);
@@ -662,6 +893,7 @@ function buildCity() {
   buildStreetProps();
   cityMask();
   if (typeof buildLandmarks === 'function') buildLandmarks();
+  if (typeof buildInteriors === 'function') buildInteriors();
   finalizeCity();
   walkInfo = cityWalkInfo;
 }

@@ -253,19 +253,65 @@ function buildSpecies() {
         ? makeDeciduous(s0, { ...d.o, cards: Math.max(18, Math.round(d.o.cards * 0.28)), cardSize: d.o.cardSize * 1.7, prim: Math.min(3, d.o.prim) })
         : makeConifer(s0, { ...d.o, tiers: Math.max(4, Math.round(d.o.tiers * 0.45)), perTier: Math.max(4, Math.round(d.o.perTier * 0.55)) });
       g.lo = lo;
+      g.clearance = treeGeometryClearance(g);
       vars.push(g);
       h = g.height;
     }
     const lm = makeLeafMaterial(TEX[d.tex], 'leaf-' + name, { h, stiff: d.stiff || 1.4, transl: d.transl });
     const bm = makeBarkMaterial('bark-' + name, h);
-    SPECIES[name] = { vars, lm, bm, h, items: [] };
+    SPECIES[name] = { vars, lm, bm, h, stiff: d.stiff || 1.4, items: [] };
   }
+}
+
+// Include the larger low-detail cards, branches and random tree rotation. A
+// trunk-only placement check allows an outdoor crown to cross an interior wall.
+function treeGeometryClearance(g) {
+  return ['trunk', 'leaves'].map(part => {
+    let radius = 0, minY = Infinity, maxY = -Infinity;
+    for (const geo of [g[part], g.lo[part]]) {
+      const p = geo.getAttribute('position');
+      for (let i = 0; i < p.count; i++) {
+        radius = Math.max(radius, Math.hypot(p.getX(i), p.getZ(i)));
+        minY = Math.min(minY, p.getY(i)); maxY = Math.max(maxY, p.getY(i));
+      }
+    }
+    return { part, radius, minY, maxY };
+  });
+}
+
+function treeOverlapsBuilding(sp, it) {
+  const parts = sp.vars[it.v].clearance.map(bound => {
+    const hf = clamp(bound.maxY / sp.h, 0, 1.2);
+    // windBend reaches 1.575 at maximum wind; instancing leaves that bend in
+    // world metres. Leaf flutter, unlike the bend, scales with the tree.
+    const bend = 1.575 * hf * hf * sp.h * 0.12 / (bound.part === 'trunk' ? 1.6 : sp.stiff);
+    const flutter = bound.part === 'leaves' ? 0.075 * hf * it.s : 0;
+    return { radius: bound.radius * it.s + bend + flutter + 0.18,
+      minY: it.y + bound.minY * it.s - flutter, maxY: it.y + bound.maxY * it.s + flutter };
+  });
+  return CITYDATA.buildings.some(b => {
+    const room = b.room || b;
+    const baseY = room.baseY ?? heightAt(b.cx, b.cz);
+    const minY = baseY - (room.plinth || 0);
+    const maxY = baseY + (b.H ?? (4.2 + Math.max(0, (room.floors || 1) - 1) * (room.fh || 3.2))) + 1.2;
+    const c = room.c ?? Math.cos(b.rot || 0), s = room.s ?? Math.sin(b.rot || 0);
+    const dx = it.x - b.cx, dz = it.z - b.cz;
+    const lx = dx * c - dz * s, lz = dx * s + dz * c;
+    // Circle versus the rotated footprint, including roof overhang. Vertical
+    // separation permits a high crown over a genuinely lower roof.
+    const qx = Math.max(0, Math.abs(lx) - b.w / 2 - 0.45);
+    const qz = Math.max(0, Math.abs(lz) - b.d / 2 - 0.45);
+    return parts.some(p => p.maxY >= minY && p.minY <= maxY && qx * qx + qz * qz <= p.radius * p.radius);
+  });
 }
 
 function plant(name, x, z, { y = null, s = 1, tint = null } = {}) {
   const sp = SPECIES[name];
   const yy = y === null ? heightAt(x, z) - 0.15 : y;
-  sp.items.push({ x, y: yy, z, s: s * (0.85 + rand() * 0.3), r: rand() * TAU, v: Math.floor(rand() * sp.vars.length), tint });
+  const it = { x, y: yy, z, s: s * (0.85 + rand() * 0.3), r: rand() * TAU, v: Math.floor(rand() * sp.vars.length), tint };
+  if (treeOverlapsBuilding(sp, it)) return false;
+  sp.items.push(it);
+  return true;
 }
 
 // instancing into spatial cells for culling
@@ -431,6 +477,59 @@ function placeTrees() {
 
 // --- grass + flowers (camera-following instanced fields) -------------------------------
 const FIELDS = [];
+const FIELD_MASK_BLOCK = 32;
+let fieldMaskOccupancy = null, fieldMaskTexture = null, fieldMaskVersion = -1;
+let fieldVisibilityCellX = null, fieldVisibilityCellZ = null;
+
+function buildFieldMaskOccupancy(mask, n = MASK_N, world = WORLD) {
+  const cells = Math.ceil(n / FIELD_MASK_BLOCK), occupied = new Uint8Array(cells * cells);
+  for (let z = 0; z < n; z++) for (let x = 0; x < n; x++) {
+    const pixel = (z * n + x) * 4;
+    const bits = (mask[pixel] > 0 ? 1 : 0) | (mask[pixel + 1] > 0 ? 2 : 0);
+    if (bits) occupied[Math.floor(z / FIELD_MASK_BLOCK) * cells + Math.floor(x / FIELD_MASK_BLOCK)] |= bits;
+  }
+  return { occupied, cells, pixelWorld: world / n, cellWorld: world / n * FIELD_MASK_BLOCK, world };
+}
+
+function fieldMaskHasVegetation(mask, minX, maxX, minZ, maxZ, channel) {
+  // Clamp indices like the GPU mask sampler: points outside the world still
+  // inherit its boundary texels. Any occupied texel retains the entire field.
+  const index = v => clamp(Math.floor((v + mask.world / 2) / mask.cellWorld), 0, mask.cells - 1);
+  const x0 = index(minX), x1 = index(maxX), z0 = index(minZ), z1 = index(maxZ);
+  for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) {
+    if (mask.occupied[z * mask.cells + x] & channel) return true;
+  }
+  return false;
+}
+
+function updateFieldVisibility(force = false) {
+  const texture = G.uMask.value;
+  // buildNature precedes finishMask; wait for the final city/park mask upload.
+  if (!texture || !texture.image || texture.image.data !== MASK) {
+    for (const f of FIELDS) f.visible = true;
+    fieldVisibilityCellX = fieldVisibilityCellZ = null;
+    return;
+  }
+  if (texture !== fieldMaskTexture || texture.version !== fieldMaskVersion) {
+    fieldMaskOccupancy = buildFieldMaskOccupancy(MASK);
+    fieldMaskTexture = texture; fieldMaskVersion = texture.version;
+    force = true;
+  }
+  const mask = fieldMaskOccupancy, step = mask.pixelWorld * 8;
+  const cx = Math.floor((camera.position.x + WORLD / 2) / step);
+  const cz = Math.floor((camera.position.z + WORLD / 2) / step);
+  if (!force && cx === fieldVisibilityCellX && cz === fieldVisibilityCellZ) return;
+  fieldVisibilityCellX = cx; fieldVisibilityCellZ = cz;
+  const minX = cx * step - WORLD / 2, minZ = cz * step - WORLD / 2;
+  for (const f of FIELDS) {
+    // Cover every possible camera position in this cached cell, plus the whole
+    // fade footprint, maximum blade movement and linear-filter texel support.
+    const radius = f.userData.u.uFadeF.value + 4 + mask.pixelWorld;
+    f.visible = fieldMaskHasVegetation(mask, minX - radius, minX + step + radius,
+      minZ - radius, minZ + step + radius, f.userData.maskChannel);
+  }
+}
+
 function bladeClump(nBlades, seg, width) {
   const pos = [], nrm = [], idx = [], uv = [];
   const rng = mulberry32(5);
@@ -508,7 +607,9 @@ function makeField({ geo, count, tile, fadeN, fadeF, hScale, key, flowers = fals
       float gd = ${flowers ? 'gm.g' : 'gm.r'};
       float keep = step(aI.w, gd * ${flowers ? '0.55' : '1.0'});
       float dist = length(gRel);
-      float fade = (1.0 - smoothstep(uFadeN, uFadeF, dist)) * smoothstep(uInner * 0.8, uInner, dist);
+      // Near fields have no inner hole; smoothstep(0, 0, dist) is undefined.
+      float innerFade = ${innerCut > 0 ? 'smoothstep(uInner * 0.8, uInner, dist)' : '1.0'};
+      float fade = (1.0 - smoothstep(uFadeN, uFadeF, dist)) * innerFade;
       float nH = texture2D(uNoise, gxz * 0.023).g;
       float gh = (0.45 + 0.65 * fract(aI.w * 7.13)) * uHScale * (0.55 + 0.7 * nH) * keep * fade;
       if (terrainH(gxz) < 0.35) gh = 0.0;
@@ -521,7 +622,7 @@ function makeField({ geo, count, tile, fadeN, fadeF, hScale, key, flowers = fals
       vec3 wb = windBend(gxz, hf, 0.9, aI.w * 6.28 + gxz.x * 0.3) * gh * 1.2;
       vec2 away = gxz - uPlayer.xz;
       float pdst = length(away);
-      p.xz += normalize(away + 1e-4) * (1.0 - smoothstep(0.2, 1.3, pdst)) * hf * gh * 0.8 * step(abs(uPlayer.y - gy), 2.5);
+      p.xz += (away / max(pdst, 1e-4)) * (1.0 - smoothstep(0.2, 1.3, pdst)) * hf * gh * 0.8 * step(abs(uPlayer.y - gy), 2.5);
       p += wb;
       p.y -= dot(wb.xz, wb.xz) * 0.45 / max(gh, 0.05);
       gPos = vec3(gxz.x, gy, gxz.y) + p;
@@ -561,7 +662,7 @@ function makeField({ geo, count, tile, fadeN, fadeF, hScale, key, flowers = fals
   mesh.receiveShadow = true;
   mesh.castShadow = false;
   mesh.layers.set(LAYER_NOREFLECT);
-  mesh.userData = { u, full: count };
+  mesh.userData = { u, full: count, maskChannel: flowers ? 2 : 1 };
   scene.add(mesh);
   FIELDS.push(mesh);
   return mesh;
@@ -608,6 +709,7 @@ let lodTimer = 0;
 function updateFields(dt = 0.016) {
   for (const f of FIELDS) f.userData.u.uCamF.value.copy(camera.position);
   lodTimer -= dt;
+  updateFieldVisibility(lodTimer <= 0);
   if (lodTimer > 0) return;
   lodTimer = 0.3;
   const c = camera.position;

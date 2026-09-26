@@ -4,9 +4,9 @@
 // ============================================================================
 
 const VIEWS = [
-  { key: '1', name: '항구', pos: [230, 14, 190], tgt: [60, 6, 150] },
+  { key: '1', name: '해안 산책로', pos: [96, 9.6, 142], tgt: [51, 9, 102] },
   { key: '2', name: '운하', pos: [0, 5.3, 63], tgt: [0, 2.2, -40] },
-  { key: '3', name: '광장', pos: [18, 4.0, 0], tgt: [38, 6, -30] },
+  { key: '3', name: '광장', pos: [27, 4.3, 6], tgt: [36, 5, -24] },
   { key: '4', name: '공원', pos: [163, 4.4, -122], tgt: [180, 1.0, -162] },
   { key: '5', name: '언덕', pos: [-70, 96, -430], tgt: [10, 0, 60] },
   { key: '6', name: '등대', pos: [470, 62, 300], tgt: [110, 6, 110] },
@@ -50,6 +50,8 @@ function initControls() {
   addEventListener('keydown', (e) => {
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
     CTRL.keys.add(e.code);
+    if (CTRL.mode === 'walk' && e.code === 'KeyE' && !e.repeat && typeof interactInterior === 'function') interactInterior();
+    if (CTRL.mode === 'walk' && ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(e.code) && typeof leaveInteriorSeat === 'function') leaveInteriorSeat();
     if (e.code === 'Space' && CTRL.mode === 'walk' && CTRL.grounded) { CTRL.vy = 4.2; CTRL.grounded = false; }
     if (['Space', 'ArrowUp', 'ArrowDown'].includes(e.code) && CTRL.mode !== 'orbit') e.preventDefault();
   });
@@ -136,6 +138,7 @@ function syncYawPitchFromCamera() {
 function setMode(mode) {
   const prev = CTRL.mode;
   if (prev === mode) return;
+  if (typeof leaveInteriorSeat === 'function') leaveInteriorSeat();
   CTRL.mode = mode;
   CTRL.trans = null;
   if (document.pointerLockElement) { try { document.exitPointerLock(); } catch (_) { /* ignore */ } }
@@ -166,7 +169,7 @@ function setMode(mode) {
     p.y = w.h + CTRL.eye;
     CTRL.pitch = clamp(CTRL.pitch, -0.4, 0.3);
     CTRL.vy = 0; CTRL.grounded = true;
-    showHint(IS_TOUCH ? '왼쪽 아래를 끌어 걷고, 화면을 밀어 둘러보세요' : '화면을 클릭하면 시점이 고정돼요<br><kbd>W A S D</kbd> 걷기 · <kbd>Shift</kbd> 달리기 · <kbd>Space</kbd> 점프 · <kbd>Esc</kbd> 해제');
+    showHint(IS_TOUCH ? '왼쪽 아래를 끌어 걷고, 문 앞의 안내를 터치하면 들어갈 수 있어요' : '<kbd>W A S D</kbd> 걷기 · <kbd>Shift</kbd> 달리기 · <kbd>E</kbd> 문 / 조명 / 앉기 · <kbd>Space</kbd> 점프 · <kbd>Esc</kbd> 해제');
   }
   if (mode === 'fly') showHint(IS_TOUCH ? '왼쪽 아래를 끌어 날고, 화면을 밀어 방향을 바꿔요' : '화면을 클릭하면 시점이 고정돼요<br><kbd>W A S D</kbd> 이동 · <kbd>E</kbd>/<kbd>Q</kbd> 오르내리기 · <kbd>Shift</kbd> 빠르게');
   if (mode === 'cine') { CTRL.cineT = nearestCineT(); showHint('천천히 도시를 한 바퀴 돌아요'); }
@@ -185,6 +188,8 @@ function showHint(html) {
 function goToView(i) {
   const v = VIEWS[i];
   if (!v) return;
+  document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.view) === i)));
+  if (typeof leaveInteriorSeat === 'function') leaveInteriorSeat();
   if (CTRL.mode === 'cine') setMode('orbit');
   const from = camera.position.clone();
   const fromT = new THREE.Vector3();
@@ -265,6 +270,10 @@ function updateControls(dt) {
   // walk / fly share look
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(CTRL.pitch, CTRL.yaw, 0, 'YXZ'));
   camera.quaternion.slerp(q, 1 - Math.exp(-dt * 30));
+  if (CTRL.mode === 'walk' && typeof INTERIORS !== 'undefined' && INTERIORS.seats) {
+    camera.position.copy(INTERIORS.seats.seat.pos);
+    return;
+  }
   let fx = 0, fz = 0, fy = 0;
   if (K.has('KeyW') || K.has('ArrowUp')) fz += 1;
   if (K.has('KeyS') || K.has('ArrowDown')) fz -= 1;
@@ -298,19 +307,24 @@ function updateControls(dt) {
   const speed = fast ? 5.2 : 1.9;
   CTRL.vel.lerp(_m.multiplyScalar(speed), 1 - Math.exp(-dt * 8));
   const p = camera.position;
-  const nx = p.x + CTRL.vel.x * dt, nz = p.z + CTRL.vel.z * dt;
   const cur = walkInfo(p.x, p.z);
   const feet = p.y - CTRL.eye;
   const ok = (x, z) => { const w = walkInfo(x, z); return !w.blocked && w.h - feet < 0.55; };
-  if (ok(nx, nz)) { p.x = nx; p.z = nz; }
-  else if (ok(nx, p.z)) p.x = nx;
-  else if (ok(p.x, nz)) p.z = nz;
+  // Sweep the capsule in <= 8 cm steps, including during low-frame-rate running.
+  const steps = Math.max(1, Math.ceil(Math.hypot(CTRL.vel.x, CTRL.vel.z) * dt / 0.08));
+  for (let si = 0; si < steps; si++) {
+    const nx = p.x + CTRL.vel.x * dt / steps, nz = p.z + CTRL.vel.z * dt / steps;
+    if (ok(nx, nz)) { p.x = nx; p.z = nz; }
+    else { if (ok(nx, p.z)) p.x = nx; if (ok(p.x, nz)) p.z = nz; }
+  }
   const g = walkInfo(p.x, p.z).h;
   CTRL.vy -= 9.8 * dt;
   let y = feet + CTRL.vy * dt;
   if (y <= g) { y = y < g - 0.3 ? lerp(y, g, 1 - Math.exp(-dt * 18)) : g; CTRL.vy = 0; CTRL.grounded = true; }
   else if (y - g > 0.05) CTRL.grounded = false;
   if (CTRL.grounded && y < g + 0.02) y = lerp(feet, g, 1 - Math.exp(-dt * 14));
+  const roomInfo = typeof interiorWalkInfo === 'function' ? interiorWalkInfo(p.x, p.z, 0) : null;
+  if (roomInfo && roomInfo.room && y + CTRL.eye > roomInfo.room.baseY + 3.3) { y = roomInfo.room.baseY + 3.3 - CTRL.eye; CTRL.vy = Math.min(0, CTRL.vy); }
   const mv = Math.hypot(CTRL.vel.x, CTRL.vel.z);
   CTRL.bob += mv * dt * 2.1;
   const bob = CTRL.grounded ? Math.sin(CTRL.bob * Math.PI) * 0.035 * clamp(mv / 2, 0, 1.4) : 0;

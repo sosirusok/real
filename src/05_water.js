@@ -46,7 +46,9 @@ const WATER_VHEAD = /* glsl */ `
       float w = sqrt(9.81 * k);
       float ph = k * dot(D, p) - w * uTime + float(i) * 1.7;
       float a = A[i] * amp;
-      float Q = a > 0.0 ? min(0.75 / (k * a * 5.0), 1.0) : 0.0;
+      // Pool waves have a compile-time zero amplitude on some drivers; keep
+      // even the inactive ternary branch finite during shader optimization.
+      float Q = a > 0.0 ? min(0.75 / max(k * a * 5.0, 0.0001), 1.0) : 0.0;
       float c = cos(ph), s = sin(ph);
       gDisp.x += Q * a * D.x * c;
       gDisp.z += Q * a * D.y * c;
@@ -101,7 +103,7 @@ function makeWaterMaterial({ fixedDepth = -1, key = 'water' } = {}) {
       vec3 n2 = texture2D(uWaterN, p * 0.093 + vec2(-wd.y, wd.x) * uTime * 0.017 + wd * uTime * 0.03).xyz * 2.0 - 1.0;
       vec3 n3 = texture2D(uWaterN, p * 0.29 - wd * uTime * 0.05).xyz * 2.0 - 1.0;
       float fadeD = 1.0 - smoothstep(30.0, 600.0, dist) * 0.75;
-      float k = (0.22 + 0.55 * ws) * fadeD;
+      float k = (0.16 + 0.42 * ws) * fadeD;
       vec2 dn = (n1.xy * 0.55 + n2.xy * 0.45 + n3.xy * 0.35 * (1.0 - smoothstep(10.0, 80.0, dist))) * k;
       vec3 gN = normalize(vNormal);
       // vNormal is view space; rebuild world geometric normal from it
@@ -114,8 +116,8 @@ function makeWaterMaterial({ fixedDepth = -1, key = 'water' } = {}) {
       wA = 1.0 - exp(-thick * 0.32);
       wA = max(wA, smoothstep(0.0, 1.2, depth) * 0.25);
       // colours
-      vec3 deep = vec3(0.006, 0.045, 0.055);
-      vec3 shallow = vec3(0.05, 0.22, 0.2);
+      vec3 deep = vec3(0.012, 0.085, 0.105);
+      vec3 shallow = vec3(0.085, 0.30, 0.265);
       vec3 body = mix(shallow, deep, smoothstep(0.3, 7.0, depth));
       // shoreline + crest foam
       float fn = texture2D(uNoise, p * 0.23 + vec2(uTime * 0.012, -uTime * 0.008)).a;
@@ -128,19 +130,22 @@ function makeWaterMaterial({ fixedDepth = -1, key = 'water' } = {}) {
       body = mix(body, vec3(0.8, 0.84, 0.86), wFoam);
       wA = mix(wA, 1.0, wFoam);
       diffuseColor.rgb = body;
-      wRough = mix(0.035, 0.16, smoothstep(40.0, 900.0, dist));
+      wRough = mix(0.065, 0.20, smoothstep(40.0, 900.0, dist));
       wRough = mix(wRough, 0.7, wFoam);
     `,
     fRough: 'roughnessFactor = wRough;',
     fNormal: 'normal = normalize((viewMatrix * vec4(wN, 0.0)).xyz);',
     fMaps: /* glsl */ `
       #if defined( RE_IndirectSpecular )
-      if (uReflOn > 0.5) {
+      if (uReflOn > 0.5 && ${fd} < 0.0) {
         vec4 rc = uReflMat * vec4(vWPos.x, 0.0, vWPos.z, 1.0);
-        vec2 ruv = rc.xy / rc.w + (wN.xz) * 0.035 * (1.0 - wFoam);
-        vec3 rcol = texture2D(uRefl, ruv).rgb;
-        float edge = smoothstep(0.0, 0.03, ruv.x) * smoothstep(1.0, 0.97, ruv.x) * smoothstep(0.0, 0.03, ruv.y) * smoothstep(1.0, 0.97, ruv.y);
-        radiance = mix(radiance, rcol, edge * (1.0 - wFoam));
+        if (rc.w > 0.0001) {
+          vec2 ruv = rc.xy / rc.w + (wN.xz) * 0.018 * (1.0 - wFoam);
+          vec3 rcol = texture2D(uRefl, clamp(ruv, 0.001, 0.999)).rgb;
+          float edge = smoothstep(0.0, 0.03, ruv.x) * (1.0 - smoothstep(0.97, 1.0, ruv.x))
+            * smoothstep(0.0, 0.03, ruv.y) * (1.0 - smoothstep(0.97, 1.0, ruv.y));
+          radiance = mix(radiance, rcol, edge * (1.0 - wFoam));
+        }
       }
       #endif
     `,
@@ -172,21 +177,26 @@ function buildWater() {
 }
 
 function resizeReflection() {
+  WATER.uReflOn.value = 0;
+  WATER.uRefl.value = null;
   if (WATER.reflRT) { WATER.reflRT.dispose(); WATER.reflRT = null; }
-  if (!Qs.refl) { WATER.uReflOn.value = 0; return; }
+  if (!Qs.refl) return;
   const w = Math.max(64, Math.floor(renderer.domElement.width * Qs.refl));
   const h = Math.max(64, Math.floor(renderer.domElement.height * Qs.refl));
-  WATER.reflRT = new THREE.WebGLRenderTarget(w, h, { type: THREE.HalfFloatType });
-  WATER.uRefl.value = WATER.reflRT.texture;
-  WATER.uReflOn.value = 1;
+  WATER.reflRT = new THREE.WebGLRenderTarget(w, h, { type: RENDER_CAPS.type });
+  WATER.reflRT.texture.name = 'Harbor.planarReflection';
+  // The sampler is only published after the first successful reflection draw.
 }
 
 const _rq = new THREE.Vector4(), _plane = new THREE.Plane(), _cp = new THREE.Vector4();
+const _reflViewport = new THREE.Vector4(), _reflScissor = new THREE.Vector4();
 function renderReflection() {
   const cam = camera;
+  if (!WATER.mesh) return;
   // follow camera (snapped) so the fine inner rings stay under the viewer
   WATER.mesh.position.set(Math.round(cam.position.x), 0, Math.round(cam.position.z));
-  if (!WATER.reflRT || cam.position.y < 0.05) return;
+  WATER.uReflOn.value = 0;
+  if (!WATER.reflRT || cam.position.y < 0.08) return;
   const rc = WATER.reflCam;
   rc.copy(cam, false);
   rc.position.set(cam.position.x, -cam.position.y, cam.position.z);
@@ -210,16 +220,43 @@ function renderReflection() {
   _rq.y = (Math.sign(_cp.y) + pm[9]) / pm[5];
   _rq.z = -1.0;
   _rq.w = (1.0 + pm[10]) / pm[14];
-  _cp.multiplyScalar(2.0 / _cp.dot(_rq));
+  const clipDot = _cp.dot(_rq);
+  if (!Number.isFinite(clipDot) || Math.abs(clipDot) < 1e-5) return;
+  _cp.multiplyScalar(2.0 / clipDot);
   pm[2] = _cp.x; pm[6] = _cp.y; pm[10] = _cp.z + 1.0; pm[14] = _cp.w;
   rc.projectionMatrixInverse.copy(rc.projectionMatrix).invert();
   rc.layers.set(0);
 
-  WATER.mesh.visible = false;
   const prevRT = renderer.getRenderTarget();
-  renderer.setRenderTarget(WATER.reflRT);
-  renderer.clear();
-  renderer.render(scene, rc);
-  renderer.setRenderTarget(prevRT);
-  WATER.mesh.visible = true;
+  const prevFace = renderer.getActiveCubeFace(), prevMip = renderer.getActiveMipmapLevel();
+  const prevScissorTest = renderer.getScissorTest();
+  const prevShadowAuto = renderer.shadowMap.autoUpdate, prevShadowUpdate = renderer.shadowMap.needsUpdate;
+  const prevXR = renderer.xr.enabled, prevVisible = WATER.mesh.visible;
+  renderer.getViewport(_reflViewport);
+  renderer.getScissor(_reflScissor);
+  // Other water meshes (ponds and fountain) share this sampler. Unbind it while
+  // writing its attachment, even when a shader branch would not sample it.
+  WATER.uRefl.value = null;
+  WATER.mesh.visible = false;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = false;
+  renderer.xr.enabled = false;
+  try {
+    renderer.setRenderTarget(WATER.reflRT);
+    renderer.setScissorTest(false);
+    renderer.state.buffers.depth.setMask(true);
+    renderer.clear();
+    renderer.render(scene, rc);
+    WATER.uRefl.value = WATER.reflRT.texture;
+    WATER.uReflOn.value = 1;
+  } finally {
+    renderer.setRenderTarget(prevRT, prevFace, prevMip);
+    renderer.setViewport(_reflViewport);
+    renderer.setScissor(_reflScissor);
+    renderer.setScissorTest(prevScissorTest);
+    renderer.shadowMap.autoUpdate = prevShadowAuto;
+    renderer.shadowMap.needsUpdate = prevShadowUpdate;
+    renderer.xr.enabled = prevXR;
+    WATER.mesh.visible = prevVisible;
+  }
 }

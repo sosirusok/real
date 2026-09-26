@@ -1,6 +1,6 @@
 // ============================================================================
 // Post-processing: HDR scene (MSAA + depth) -> screen-space sun shafts ->
-// bloom -> ACES tone map -> colour grade (vignette, grain, mild CA)
+// bloom -> ACES tone map -> subtle photographic colour grade
 // ============================================================================
 
 const postState = { rays: true, bloom: true, grade: true, exposure: 1 };
@@ -10,12 +10,22 @@ const FS_VERT = /* glsl */ `
   varying vec2 vUv;
   void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
 `;
+// A single NaN entering a bloom mip chain spreads into screen-sized black
+// rectangles. Preserve valid HDR values and contain invalid material output
+// before any blur. Comparisons also catch NaN on GLSL ES implementations.
+const FINITE_HDR = /* glsl */ `
+  vec3 finiteHDR(vec3 c) {
+    return vec3(c.r >= 0.0 ? min(c.r, 32000.0) : 0.0,
+                c.g >= 0.0 ? min(c.g, 32000.0) : 0.0,
+                c.b >= 0.0 ? min(c.b, 32000.0) : 0.0);
+  }
+`;
 
 class SunShaftsPass extends Pass {
   constructor() {
     super();
     this.needsSwap = true;
-    this.rt = new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType });
+    this.rt = new THREE.WebGLRenderTarget(2, 2, { type: RENDER_CAPS.type, depthBuffer: false });
     this.samples = Qs.rays;
     this.maskMat = new THREE.ShaderMaterial({
       defines: { SAMPLES: this.samples },
@@ -26,6 +36,7 @@ class SunShaftsPass extends Pass {
       },
       vertexShader: FS_VERT,
       fragmentShader: /* glsl */ `
+        ${FINITE_HDR}
         uniform sampler2D tColor;
         uniform sampler2D tDepth;
         uniform vec2 uSun;
@@ -36,7 +47,7 @@ class SunShaftsPass extends Pass {
           if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return 0.0;
           float d = texture2D(tDepth, uv).r;
           if (d < 0.999999) return 0.0;
-          vec3 c = texture2D(tColor, uv).rgb;
+          vec3 c = finiteHDR(texture2D(tColor, uv).rgb);
           float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
           vec2 dd = uv - uSun; dd.x *= uAspect;
           return min(max(l - uThresh, 0.0), 2.5) * exp(-dot(dd, dd) * 7.0);
@@ -59,15 +70,18 @@ class SunShaftsPass extends Pass {
       uniforms: { tColor: { value: null }, tRays: { value: null }, uCol: { value: new THREE.Color() }, uStrength: { value: 0 } },
       vertexShader: FS_VERT,
       fragmentShader: /* glsl */ `
+        ${FINITE_HDR}
         uniform sampler2D tColor;
         uniform sampler2D tRays;
         uniform vec3 uCol;
         uniform float uStrength;
         varying vec2 vUv;
         void main() {
-          vec3 c = texture2D(tColor, vUv).rgb;
-          vec3 r = texture2D(tRays, vUv).rgb;
-          gl_FragColor = vec4(c + r * uCol * uStrength, 1.0);
+          vec3 c = finiteHDR(texture2D(tColor, vUv).rgb);
+          // Do not sample an uninitialized/stale shaft target when the sun is
+          // outside the view. Multiplying an invalid sample by zero is unsafe.
+          if (uStrength > 0.001) c += finiteHDR(texture2D(tRays, vUv).rgb) * uCol * uStrength;
+          gl_FragColor = vec4(finiteHDR(c), 1.0);
         }
       `,
       depthTest: false, depthWrite: false,
@@ -91,13 +105,17 @@ class SunShaftsPass extends Pass {
     r.setRenderTarget(this.renderToScreen ? null : writeBuffer);
     this.q2.render(r);
   }
+  dispose() {
+    this.rt.dispose(); this.maskMat.dispose(); this.compMat.dispose();
+    this.q1.dispose(); this.q2.dispose();
+  }
 }
 
 const GradeShader = {
   uniforms: {
     tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
-    uVig: { value: 0.34 }, uSat: { value: 1.14 }, uCon: { value: 1.1 }, uGrain: { value: 0.025 }, uCA: { value: 0.0025 },
-    uWarm: { value: new THREE.Vector3(1.02, 1.0, 0.97) }, uShadowTint: { value: new THREE.Vector3(0.98, 1.0, 1.04) },
+    uVig: { value: 0.065 }, uSat: { value: 1.01 }, uCon: { value: 1.015 }, uGrain: { value: 0.001 }, uCA: { value: 0 },
+    uWarm: { value: new THREE.Vector3(1.005, 1.0, 0.995) }, uShadowTint: { value: new THREE.Vector3(0.99, 1.015, 1.02) },
   },
   vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */ `
@@ -125,14 +143,16 @@ const GradeShader = {
 
 function buildPost() {
   const size = renderer.getDrawingBufferSize(new THREE.Vector2());
-  const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: Qs.msaa });
+  const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: RENDER_CAPS.type, samples: renderSamples() });
+  rt.texture.name = 'Harbor.sceneHDR';
   rt.depthTexture = new THREE.DepthTexture(size.x, size.y);
   rt.depthTexture.type = THREE.UnsignedIntType;
+  rt.depthTexture.minFilter = rt.depthTexture.magFilter = THREE.NearestFilter;
   composer = new EffectComposer(renderer, rt);
   composer.setPixelRatio(1);
   renderPass = new RenderPass(scene, camera);
   raysPass = new SunShaftsPass();
-  bloomPass = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.22, 0.45, 2.2);
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.17, 0.35, 2.2);
   outputPass = new OutputPass();
   gradePass = new ShaderPass(GradeShader);
   composer.addPass(renderPass);
@@ -156,13 +176,15 @@ function updatePost(t) {
   raysPass.maskMat.uniforms.uSun.value.set(sx, sy);
   raysPass.compMat.uniforms.uStrength.value = postState.rays ? 0.3 * facing * on * edge * elevFade : 0;
   raysPass.compMat.uniforms.uCol.value.copy(G.uSunCol.value).multiplyScalar(0.25);
-  raysPass.enabled = postState.rays;
-  bloomPass.enabled = postState.bloom;
+  // The composite also protects the subsequent bloom pass. Turning shafts off
+  // sets strength to zero and skips their mask draw, retaining the safe copy.
+  raysPass.enabled = true;
+  bloomPass.enabled = postState.bloom && RENDER_CAPS.hdr;
   gradePass.enabled = postState.grade;
   gradePass.uniforms.uTime.value = t;
   gradePass.uniforms.uRes.value.set(renderer.domElement.width, renderer.domElement.height);
   // night: cooler shadows
   const n = G.uNight.value;
-  gradePass.uniforms.uShadowTint.value.set(lerp(0.98, 0.93, n), 1.0, lerp(1.04, 1.12, n));
-  gradePass.uniforms.uWarm.value.set(lerp(1.03, 1.05, n), 1.0, lerp(0.96, 0.9, n));
+  gradePass.uniforms.uShadowTint.value.set(lerp(0.99, 0.97, n), 1.0, lerp(1.02, 1.06, n));
+  gradePass.uniforms.uWarm.value.set(lerp(1.015, 1.025, n), 1.0, lerp(0.985, 0.96, n));
 }

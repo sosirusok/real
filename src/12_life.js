@@ -309,7 +309,7 @@ function buildPondLife() {
   fin.computeVertexNormals();
   const koiG = mergeParts([{ g: body, color: [1, 1, 1], part: 1 }, { g: fin, color: [1, 1, 1], part: 1 }]);
   const v = /* glsl */ `
-    float sw = sin(uTime * 5.0 + aAnim.x - transformed.z * 7.0) * 0.06 * smoothstep(0.2, -0.45, transformed.z);
+    float sw = sin(uTime * 5.0 + aAnim.x - transformed.z * 7.0) * 0.06 * (1.0 - smoothstep(-0.45, 0.2, transformed.z));
     transformed.x += sw;
   `;
   const { mat } = creatureMat('koi', v, { side: THREE.DoubleSide, rough: 0.35 });
@@ -543,10 +543,10 @@ function updateBoats(t) {
 // --- trams ----------------------------------------------------------------------------------
 function tramGeometry() {
   const b = new GeoBuilder({ aP: 3 }, { aP: [0.5, 0, 0] });
-  const red = srgb('#b33a2b'), cream = srgb('#efe4c8'), dark = srgb('#2a2d2e');
-  boxW(b, 0, 0.75, 0, 11, 1.1, 2.4, 0, red);
+  const sage = srgb('#70877b'), cream = srgb('#f1f0e7'), dark = srgb('#2a2d2e');
+  boxW(b, 0, 0.75, 0, 11, 1.1, 2.4, 0, sage);
   boxW(b, 0, 2.05, 0, 11, 1.5, 2.4, 0, cream);
-  boxW(b, 0, 3.0, 0, 11.2, 0.4, 2.5, 0, red);
+  boxW(b, 0, 3.0, 0, 11.2, 0.4, 2.5, 0, sage);
   boxW(b, 0, 3.35, 0, 10.4, 0.3, 2.1, 0, srgb('#6a6d6e'));
   for (let k = -4; k <= 4; k++) {
     for (const sz of [1.21, -1.21]) boxW(b, k * 1.15, 2.1, sz, 0.95, 1.05, 0.03, 0, srgb('#1e2a30'), { aP: [0.08, 0.3, 3.5] });
@@ -694,7 +694,8 @@ function buildFireflies() {
       vec4 mv = modelViewMatrix * vec4(p, 1.0);
       float blink = smoothstep(0.35, 1.0, sin(uTime * (1.2 + aSeed * 1.8) + aSeed * 40.0));
       vA = blink * smoothstep(0.55, 0.95, uNight);
-      gl_PointSize = 0.35 * uPR * 900.0 / -mv.z * (0.6 + blink * 0.6);
+      gl_PointSize = clamp(0.35 * uPR * 900.0 / max(-mv.z, 0.1) * (0.6 + blink * 0.6), 1.0, 96.0);
+      vA *= step(0.1, -mv.z);
       gl_Position = projectionMatrix * mv;
     }`, /* glsl */ `
     uniform sampler2D uGlow; varying float vA; varying vec3 vW;
@@ -726,8 +727,8 @@ function buildPollen() {
       vec3 v = normalize(p - cameraPosition);
       float back = pow(max(dot(v, uTrueSun), 0.0), 6.0);
       float dist = length(p - cameraPosition);
-      vA = (0.02 + back * 0.7) * smoothstep(20.0, 8.0, dist) * smoothstep(0.5, 2.0, dist) * uDay;
-      gl_PointSize = 0.05 * uPR * 900.0 / -mv.z;
+      vA = (0.02 + back * 0.7) * (1.0 - smoothstep(8.0, 20.0, dist)) * smoothstep(0.5, 2.0, dist) * uDay * step(0.1, -mv.z);
+      gl_PointSize = clamp(0.05 * uPR * 900.0 / max(-mv.z, 0.1), 1.0, 40.0);
       gl_Position = projectionMatrix * mv;
     }`, /* glsl */ `
     uniform sampler2D uGlow; varying float vA; varying vec3 vW;
@@ -761,7 +762,8 @@ function buildSmoke() {
       vW = p;
       vec4 mv = modelViewMatrix * vec4(p, 1.0);
       vA = smoothstep(0.0, 0.1, ph) * (1.0 - ph) * 0.22;
-      gl_PointSize = (0.6 + tt * 0.5) * uPR * 900.0 / -mv.z;
+      gl_PointSize = clamp((0.6 + tt * 0.5) * uPR * 900.0 / max(-mv.z, 0.1), 1.0, 160.0);
+      vA *= step(0.1, -mv.z);
       gl_Position = projectionMatrix * mv;
     }`, /* glsl */ `
     uniform sampler2D uGlow; varying float vA; varying vec3 vW;
@@ -832,7 +834,8 @@ function buildFountainWater() {
       vW = p;
       vec4 mv = modelViewMatrix * vec4(p, 1.0);
       vA = smoothstep(0.0, 0.08, ph) * (1.0 - smoothstep(0.85, 1.0, ph));
-      gl_PointSize = (type < 0.5 ? 0.09 : 0.075) * uPR * 900.0 / -mv.z;
+      gl_PointSize = clamp((type < 0.5 ? 0.09 : 0.075) * uPR * 900.0 / max(-mv.z, 0.1), 1.0, 64.0);
+      vA *= step(0.1, -mv.z);
       gl_Position = projectionMatrix * mv;
     }`, /* glsl */ `
     uniform sampler2D uGlow; varying float vA; varying vec3 vW;
@@ -866,7 +869,8 @@ function buildFountainWater() {
         float s2 = texture2D(uNoise, vec2(vUv.x * 14.0 + 0.3, vUv.y * 0.9 + uTime * 2.3)).b;
         float streak = smoothstep(0.35, 0.8, s * 0.6 + s2 * 0.5);
         vec3 V = normalize(cameraPosition - vW);
-        float fr = pow(1.0 - abs(dot(V, vN)), 2.0);
+        float fresnel = clamp(1.0 - abs(dot(V, normalize(vN))), 0.0, 1.0);
+        float fr = fresnel * fresnel;
         float a = (0.12 + streak * 0.45 + fr * 0.35) * smoothstep(0.0, 0.15, vUv.y);
         vec3 c = uZenith * 0.9 + uHorizon * 0.7 + uSunCol * 0.12 + vec3(0.03) + vec3(1.0, 0.72, 0.42) * uNight * 0.3;
         gl_FragColor = vec4(applyFog(c, vW), a);
@@ -891,7 +895,7 @@ function buildLampLights() {
       vW = position;
       vec4 mv = modelViewMatrix * vec4(position, 1.0);
       vA = smoothstep(0.35, 0.8, uNight);
-      gl_PointSize = min(2.6 * uPR * 900.0 / -mv.z, 70.0 * uPR);
+      gl_PointSize = clamp(2.6 * uPR * 900.0 / max(-mv.z, 0.1), 1.0, 70.0 * uPR);
       vA *= smoothstep(3.0, 9.0, -mv.z);
       gl_Position = projectionMatrix * mv;
     }`, /* glsl */ `

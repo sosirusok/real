@@ -71,8 +71,10 @@ float cloudShadow(vec3 wp) {
 }
 
 vec3 fogColorDir(vec3 v) {
-  vec2 dh = normalize(v.xz + 1e-5), sh = normalize(uTrueSun.xz + 1e-5);
-  float azs = dot(dh, sh) * 0.5 + 0.5;
+  vec2 dh = v.xz / max(length(v.xz), 1e-5);
+  vec2 sh = uTrueSun.xz / max(length(uTrueSun.xz), 1e-5);
+  // Roundoff at opposite azimuths must not feed a negative fractional power.
+  float azs = clamp(dot(dh, sh) * 0.5 + 0.5, 0.0, 1.0);
   vec3 cool = mix(uFogCol, uZenith * 1.35 + vec3(0.02), 0.42);
   vec3 base = mix(cool, uFogCol, pow(azs, 1.6));
   float s = pow(max(dot(v, uTrueSun), 0.0), 7.0);
@@ -102,7 +104,8 @@ float fogAmount(vec3 wp) {
   return clamp(1.0 - exp(-max(fi, 0.0)), 0.0, 1.0);
 }
 vec3 fogColorFor(vec3 wp) {
-  return fogColorDir(normalize(wp - cameraPosition));
+  vec3 d = wp - cameraPosition;
+  return fogColorDir(d / max(length(d), 1e-5));
 }
 `;
 

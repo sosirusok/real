@@ -24,10 +24,10 @@ const TAU = Math.PI * 2;
 
 const IS_TOUCH = matchMedia('(pointer: coarse)').matches;
 const QUALITY = {
-  low:    { pr: 0.7,  shadow: 2048, msaa: 0, refl: 0,    cloudSteps: 12, rays: 24, grass: 0.3, trees: 0.45, bloom: true },
-  medium: { pr: 0.9,  shadow: 2048, msaa: 2, refl: 0.4,  cloudSteps: 18, rays: 36, grass: 0.6, trees: 0.7, bloom: true },
-  high:   { pr: 1.0,  shadow: 4096, msaa: 4, refl: 0.5,  cloudSteps: 24, rays: 48, grass: 1.0, trees: 1.0, bloom: true },
-  ultra:  { pr: 1.5,  shadow: 4096, msaa: 4, refl: 0.75, cloudSteps: 32, rays: 64, grass: 1.0, trees: 1.0, bloom: true },
+  low:    { pr: 0.7,  pixels: 1200000, shadow: 2048, msaa: 0, refl: 0,    cloudSteps: 12, rays: 24, grass: 0.3, trees: 0.45, bloom: true },
+  medium: { pr: 0.9,  pixels: 2000000, shadow: 2048, msaa: 2, refl: 0.4,  cloudSteps: 18, rays: 36, grass: 0.6, trees: 0.7, bloom: true },
+  high:   { pr: 1.0,  pixels: 3200000, shadow: 2048, msaa: 4, refl: 0.5,  cloudSteps: 24, rays: 48, grass: 1.0, trees: 1.0, bloom: true },
+  ultra:  { pr: 1.5,  pixels: 5000000, shadow: 4096, msaa: 4, refl: 0.75, cloudSteps: 32, rays: 64, grass: 1.0, trees: 1.0, bloom: true },
 };
 let qualityName = IS_TOUCH ? 'low' : 'high';
 let Qs = QUALITY[qualityName];
@@ -39,7 +39,13 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: 'high-performance',
   stencil: false,
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2) * Qs.pr);
+// Bound allocation by physical pixels: DPR 2 + Ultra otherwise allocates
+// hundreds of MB for each HDR/MSAA target on a large desktop display.
+function renderPixelRatio(w = innerWidth, h = innerHeight) {
+  return Math.min(Math.min(window.devicePixelRatio || 1, 2) * Qs.pr,
+    Math.sqrt(Qs.pixels / Math.max(1, w * h)), renderer.capabilities.maxTextureSize / Math.max(1, w, h));
+}
+renderer.setPixelRatio(renderPixelRatio());
 renderer.setSize(window.innerWidth, window.innerHeight, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -49,8 +55,23 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.shadowMap.autoUpdate = true;
 renderer.debug.checkShaderErrors = true;
 
+const RENDER_CAPS = (() => {
+  const gl = renderer.getContext();
+  const hdr = renderer.extensions.has('EXT_color_buffer_float');
+  const colour = gl.getInternalformatParameter(gl.RENDERBUFFER, hdr ? gl.RGBA16F : gl.RGBA8, gl.SAMPLES) || [];
+  const depth = gl.getInternalformatParameter(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, gl.SAMPLES) || [];
+  return {
+    type: hdr ? THREE.HalfFloatType : THREE.UnsignedByteType,
+    hdr,
+    samples: Array.from(colour).filter((n) => Array.from(depth).includes(n)),
+  };
+})();
+function renderSamples() {
+  return RENDER_CAPS.samples.reduce((best, n) => n <= Qs.msaa ? Math.max(best, n) : best, 0);
+}
+
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.25, 14000);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 14000);
 camera.position.set(-60, 30, 260);
 
 // Layers: 0 default, 1 = skip in water reflection (grass, small particles)

@@ -13,7 +13,8 @@ function windLabel() {
   return `${WIND_NAMES[i]}풍 ${ms.toFixed(1)} m/s`;
 }
 function fmtTime(h) {
-  const hh = Math.floor(h) % 24, mm = Math.floor((h % 1) * 60);
+  const minutes = Math.round(h * 60) % 1440;
+  const hh = Math.floor(minutes / 60), mm = minutes % 60;
   return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
 }
 
@@ -40,6 +41,8 @@ function initUI() {
     const b = document.createElement('button');
     b.innerHTML = `<span class="k">${v.key}</span>${v.name}`;
     b.title = `${v.name}(으)로 이동 (${v.key})`;
+    b.dataset.view = i;
+    b.setAttribute('aria-pressed', String(i === 0));
     b.addEventListener('click', () => goToView(i));
     vc.appendChild(b);
   });
@@ -114,7 +117,7 @@ function initUI() {
     if (e.code === 'KeyH') toggleHud();
     if (e.code === 'KeyT') setFlow(!skyState.flow);
     if (e.code === 'KeyM') mb.click();
-    if (/^Digit[1-7]$/.test(e.code)) goToView(+e.code.slice(5) - 1);
+    if (/^Digit[1-9]$/.test(e.code)) goToView(+e.code.slice(5) - 1);
     if (e.code === 'KeyV') {
       const order = ['orbit', 'walk', 'fly', 'cine'];
       setMode(order[(order.indexOf(CTRL.mode) + 1) % order.length]);
