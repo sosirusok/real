@@ -31,7 +31,10 @@ renderer.debug.onShaderError = (gl, program, vs, fs) => {
   console.error(log);
 };
 
-const clockState = { last: performance.now(), t: 0, fpsAcc: 0, fpsN: 0, fpsShown: 0, slow: 0, checked: false };
+const clockState = { last: performance.now(), t: 0, elapsed: 0, frameMs: 0, fpsAcc: 0, fpsN: 0, fpsShown: 0, slow: 0, checked: false };
+// One frame includes the planar reflection, shadows, scene and every post pass.
+// The default automatic reset reports only the final fullscreen draw instead.
+renderer.info.autoReset = false;
 
 canvas.addEventListener('webglcontextlost', (e) => {
   e.preventDefault();
@@ -114,10 +117,13 @@ function frame(now) {
     clockState.last = now;
     return;
   }
-  let dt = (now - clockState.last) / 1000;
+  const rawDt = Math.max(0, (now - clockState.last) / 1000);
   clockState.last = now;
-  dt = Math.min(dt, 0.066);
+  const dt = Math.min(rawDt, 0.066);
+  clockState.elapsed += rawDt;
+  clockState.frameMs = rawDt * 1000;
   clockState.t += dt;
+  renderer.info.reset();
   const t = clockState.t;
   G.uTime.value = t;
   const w = G.uWind.value;
@@ -140,13 +146,15 @@ function frame(now) {
   if (typeof updateHud === 'function') updateHud(dt);
 
   // fps + one-time adaptive quality step down
-  clockState.fpsAcc += dt; clockState.fpsN++;
+  // Use wall-clock intervals for measurements; the simulation's capped delta
+  // otherwise falsely reports at least 15 fps even when rendering is slower.
+  clockState.fpsAcc += rawDt; clockState.fpsN++;
   if (clockState.fpsAcc > 0.5) {
     const fps = clockState.fpsN / clockState.fpsAcc;
     clockState.fpsShown = fps;
     const el = $('fps'); if (el) el.textContent = fps.toFixed(0) + ' fps';
     clockState.fpsAcc = 0; clockState.fpsN = 0;
-    if (!clockState.checked && t > 4) {
+    if (!clockState.checked && clockState.elapsed > 4) {
       if (fps < 24) clockState.slow++; else clockState.slow = 0;
       if (clockState.slow >= 4) {
         clockState.checked = true;
@@ -154,7 +162,7 @@ function frame(now) {
         const i = order.indexOf(qualityName);
         if (i < order.length - 1) { setQuality(order[i + 1]); showHint('부드럽게 보이도록 그래픽 품질을 한 단계 낮췄어요'); }
       }
-      if (t > 20) clockState.checked = true;
+      if (clockState.elapsed > 20) clockState.checked = true;
     }
   }
 }
@@ -187,7 +195,9 @@ async function boot() {
       samples: composer.renderTarget1.samples, width: canvas.width, height: canvas.height,
       reflection: WATER.uReflOn.value > 0, geometries: renderer.info.memory.geometries,
       materials: { ...TEX.assetStatus },
-      textures: renderer.info.memory.textures, drawCalls: renderer.info.render.calls }),
+      textures: renderer.info.memory.textures, drawCalls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles, points: renderer.info.render.points,
+      fps: clockState.fpsShown, frameMs: clockState.frameMs }),
   };
   window.__ready = true;
 }

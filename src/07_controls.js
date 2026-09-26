@@ -4,9 +4,9 @@
 // ============================================================================
 
 const VIEWS = [
-  { key: '1', name: '항구', pos: [230, 14, 190], tgt: [60, 6, 150] },
+  { key: '1', name: '해안 산책로', pos: [96, 9.6, 142], tgt: [51, 9, 102] },
   { key: '2', name: '운하', pos: [0, 5.3, 63], tgt: [0, 2.2, -40] },
-  { key: '3', name: '광장', pos: [18, 4.0, 0], tgt: [38, 6, -30] },
+  { key: '3', name: '광장', pos: [27, 4.3, 6], tgt: [36, 5, -24] },
   { key: '4', name: '공원', pos: [163, 4.4, -122], tgt: [180, 1.0, -162] },
   { key: '5', name: '언덕', pos: [-70, 96, -430], tgt: [10, 0, 60] },
   { key: '6', name: '등대', pos: [470, 62, 300], tgt: [110, 6, 110] },
@@ -188,6 +188,7 @@ function showHint(html) {
 function goToView(i) {
   const v = VIEWS[i];
   if (!v) return;
+  document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.view) === i)));
   if (typeof leaveInteriorSeat === 'function') leaveInteriorSeat();
   if (CTRL.mode === 'cine') setMode('orbit');
   const from = camera.position.clone();

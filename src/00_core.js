@@ -26,7 +26,7 @@ const IS_TOUCH = matchMedia('(pointer: coarse)').matches;
 const QUALITY = {
   low:    { pr: 0.7,  pixels: 1200000, shadow: 2048, msaa: 0, refl: 0,    cloudSteps: 12, rays: 24, grass: 0.3, trees: 0.45, bloom: true },
   medium: { pr: 0.9,  pixels: 2000000, shadow: 2048, msaa: 2, refl: 0.4,  cloudSteps: 18, rays: 36, grass: 0.6, trees: 0.7, bloom: true },
-  high:   { pr: 1.0,  pixels: 3200000, shadow: 4096, msaa: 4, refl: 0.5,  cloudSteps: 24, rays: 48, grass: 1.0, trees: 1.0, bloom: true },
+  high:   { pr: 1.0,  pixels: 3200000, shadow: 2048, msaa: 4, refl: 0.5,  cloudSteps: 24, rays: 48, grass: 1.0, trees: 1.0, bloom: true },
   ultra:  { pr: 1.5,  pixels: 5000000, shadow: 4096, msaa: 4, refl: 0.75, cloudSteps: 32, rays: 64, grass: 1.0, trees: 1.0, bloom: true },
 };
 let qualityName = IS_TOUCH ? 'low' : 'high';

@@ -89,14 +89,15 @@ function registerInterior(o) {
       const k = x + ':' + z; if (!INTERIORS.cells.has(k)) INTERIORS.cells.set(k, []); INTERIORS.cells.get(k).push(r);
     }
   }
-  const wall = r.color.map(v => Math.min(1, v * 0.52 + 0.4));
-  const stone = srgb('#d6cbb5'), trim = srgb(type.color), metal = srgb('#29322f');
+  const wall = r.modern ? srgb('#f5f3eb') : r.color.map(v => Math.min(1, v * 0.52 + 0.4));
+  const stone = srgb(r.modern ? '#e8e3d7' : '#d6cbb5');
+  const trim = srgb(r.modern ? (r.modernStyle % 2 ? '#65706a' : '#766c58') : type.color), metal = srgb('#29322f');
   const B = (kind, x, y, z, w, h, d, col, rot = 0) => interiorBox(r, kind, x, y, z, w, h, d, col, rot);
   const hw = r.w / 2, hd = r.d / 2, t = 0.28, ceiling = 3.52;
   // The slab closes the upper storeys; all ground-floor walls have actual depth.
-  B('roomWood', 0, 0.025, 0, r.w, 0.05, r.d, srgb('#b9a48b'));
+  B('roomWood', 0, 0.025, 0, r.w, 0.05, r.d, srgb(r.modern ? '#f0e7d6' : '#b9a48b'));
   if (r.plinth > 0) B('roomStone', 0, -r.plinth / 2, 0, r.w, r.plinth, r.d, stone);
-  B('roomPlaster', 0, ceiling + 0.12, 0, r.w, 0.24, r.d, srgb('#eae4d6'));
+  B('roomPlaster', 0, ceiling + 0.12, 0, r.w, 0.24, r.d, srgb(r.modern ? '#faf8f2' : '#eae4d6'));
   B('roomPlaster', -hw + t / 2, 2.1, 0, t, 4.2, r.d, wall);
   B('roomPlaster', hw - t / 2, 2.1, 0, t, 4.2, r.d, wall);
   B('roomPlaster', 0, 2.1, -hd + t / 2, r.w, 4.2, t, wall);
@@ -104,6 +105,24 @@ function registerInterior(o) {
   // Wide glazed storefronts flank an opening; no painted door or invisible wall.
   const sideW = (r.w - r.dw) / 2, winW = sideW - 0.66;
   const doorH = 2.66;
+  if (r.modern) {
+    // Full-height shopfront, a clear central entrance and a thin floating slab.
+    // The glass uses exactly the same collision footprint as the old storefront.
+    const glassTop = 3.24, frame = 0.045;
+    B('roomPlaster', 0, (glassTop + 4.2) / 2, hd - t / 2, r.w, 4.2 - glassTop, t, wall);
+    for (const side of [-1, 1]) {
+      const cx = side * (r.dw / 2 + sideW / 2), gw = sideW - 0.12;
+      B('roomGlass', cx, 1.67, hd - 0.115, gw, 3.12, 0.018, srgb('#edf3ee'));
+      for (const yy of [0.095, glassTop]) B('roomMetal', cx, yy, hd - 0.08, sideW, frame, 0.07, trim);
+      for (const xx of [side * (hw - 0.045), side * (r.dw / 2 + 0.03)]) B('roomMetal', xx, 1.67, hd - 0.08, frame, 3.16, 0.075, trim);
+      if (gw > 2.8) B('roomMetal', cx + side * gw * 0.17, 1.67, hd - 0.08, 0.035, 3.16, 0.065, trim);
+      interiorSolid(r, cx, hd - t / 2, sideW, t);
+    }
+    B('roomGlass', 0, (doorH + glassTop) / 2, hd - 0.12, r.dw, glassTop - doorH, 0.018, srgb('#edf3ee'));
+    const canopyW = r.modernStyle % 3 === 0 ? r.w - 0.35 : Math.min(r.w - 0.35, 4.8);
+    B('roomTrim', 0, 3.43, hd + 0.45, canopyW, 0.10, 1.03, stone);
+    B('roomWood', 0, 3.375, hd + 0.44, canopyW - 0.09, 0.018, 0.93, srgb('#e4d6bc'));
+  } else {
   B('roomStone', 0, (doorH + 4.2) / 2, hd - t / 2, r.w, 4.2 - doorH, t, stone);
   B('roomTrim', 0, 3.7, hd + 0.09, r.w + 0.12, 0.17, 0.38, trim);
   for (const side of [-1, 1]) {
@@ -117,11 +136,16 @@ function registerInterior(o) {
     B('roomStone', cx, 0.56, hd + 0.12, winW + 0.24, 0.1, 0.5, stone);
     interiorSolid(r, cx, hd - t / 2, sideW, t);
   }
+  }
   for (const x of [-r.dw / 2 - 0.035, r.dw / 2 + 0.035]) B('roomTrim', x, doorH / 2, hd - 0.06, 0.08, doorH, 0.23, trim);
   B('roomTrim', 0, doorH + 0.025, hd - 0.06, r.dw + 0.16, 0.09, 0.23, trim);
   B('roomStone', 0, 0.025, hd + 0.18, r.dw + 0.12, 0.05, 0.72, stone);
   buildInteriorAccess(r);
-  // Skirting, overhead joists and three-dimensional cornice make the room legible.
+  if (r.modern) {
+    // A low oak skirting and uninterrupted ceiling keep the contemporary rooms airy.
+    for (const x of [-hw + 0.17, hw - 0.17]) B('roomWood', x, 0.105, 0, 0.04, 0.10, r.d - 0.5, srgb('#e7dac3'));
+  } else {
+  // Historic landmarks retain their original joinery and upper-storey details.
   for (const x of [-hw + 0.17, hw - 0.17]) {
     B('roomTrim', x, 0.16, 0, 0.09, 0.21, r.d - 0.5, trim);
     B('roomTrim', x, ceiling - 0.14, 0, 0.12, 0.16, r.d - 0.5, srgb('#d4c7ad'));
@@ -175,6 +199,7 @@ function registerInterior(o) {
     addGeo(pb, canopy, p.x, p.y, p.z, r.rot, new THREE.Vector3(1, 1, 0.6), trim);
     canopy.dispose();
   }
+  }
   // Downpipes at one side, brass street number plaque and an entry light.
   B('roomMetal', -hw + 0.17, 2.05, hd + 0.2, 0.065, 4.1, 0.065, metal);
   B('roomMetal', r.dw / 2 + 0.27, 1.55, hd + 0.025, 0.16, 0.22, 0.035, srgb('#a89055'));
@@ -189,7 +214,8 @@ function registerInterior(o) {
 function interiorRecipe(r, render) {
   const bins = new Map(), random = mulberry32(Math.floor(r.seed * 65497) + 318);
   const hw = r.w / 2, hd = r.d / 2;
-  const wood = srgb('#b29271'), dark = srgb('#493c31'), brass = srgb('#9d895c'), linen = srgb('#c4b7a0');
+  const wood = srgb(r.modern ? '#e9dcc5' : '#b29271'), dark = srgb(r.modern ? '#45534d' : '#493c31');
+  const brass = srgb(r.modern ? '#b3a58c' : '#9d895c'), linen = srgb(r.modern ? '#e9e5dc' : '#c4b7a0');
   const materials = { wood: 'roomWood', plaster: 'roomPlaster', metal: 'roomMetal', fabric: 'roomFabric', glow: 'roomGlow', glass: 'roomGlass', trim: 'roomTrim', shadow: 'roomShadow' };
   const bin = kind => { if (!bins.has(kind)) bins.set(kind, new GeoBuilder()); return bins.get(kind); };
   const box = (kind, x, y, z, w, h, d, col = intWhite, rot = 0, solid = false) => {
@@ -209,7 +235,7 @@ function interiorRecipe(r, render) {
   const cyl = (kind, x, y, z, rt, rb, h, col) => { if (render) shape(kind, new THREE.CylinderGeometry(rt, rb, h, 16), x, y, z, 1, col); };
   const pot = (x, z, size = 1) => {
     contact(x, z, size * 0.95, size * 0.95);
-    cyl('plaster', x, 0.26 * size, z, 0.23 * size, 0.16 * size, 0.48 * size, srgb('#a8795a'));
+    cyl('plaster', x, 0.26 * size, z, 0.23 * size, 0.16 * size, 0.48 * size, srgb(r.modern ? '#dfdfd2' : '#a8795a'));
     cyl('wood', x, 0.69 * size, z, 0.016 * size, 0.028 * size, 0.68 * size, dark);
     for (let i = 0; i < 14; i++) { const a = i * 2.4; shape('fabric', new THREE.SphereGeometry(1, 8, 6), x + Math.cos(a) * 0.2 * size, (0.56 + i * 0.042) * size, z + Math.sin(a) * 0.2 * size, new THREE.Vector3(0.2, 0.075, 0.12).multiplyScalar(size), srgb(i % 2 ? '#426743' : '#759062')); }
     if (!render) interiorSolid(r, x, z, size * 0.46, size * 0.46);
@@ -220,14 +246,16 @@ function interiorRecipe(r, render) {
     if (!render) interiorSolid(r, x, z, 0.49, 0.5, rot);
     contact(x, z, 0.9, 0.9);
     let p = T(0, -0.24);
-    rounded('wood', p[0], 0.81, p[1], 0.53, 0.25, 0.07, 0.028, wood, rot);
+    rounded(r.modern ? 'fabric' : 'wood', p[0], 0.79, p[1], 0.53, r.modern ? 0.39 : 0.25, r.modern ? 0.09 : 0.07, r.modern ? 0.045 : 0.028, r.modern ? srgb(cushion) : wood, rot);
     for (const a of [-0.2, 0.2]) { p = T(a, -0.19); cyl('wood', p[0], 0.62, p[1], 0.021, 0.023, 0.63, wood); }
     for (const a of [-0.18, 0.18]) for (const b of [-0.17, 0.17]) { p = T(a, b); cyl('wood', p[0], 0.26, p[1], 0.024, 0.016, 0.46, dark); }
     if (!render) r.seats.push({ pos: interiorWorld(r, x, 1.18, z), yaw: r.rot + rot + Math.PI });
   };
   const table = (x, z) => {
     contact(x, z, 1.85, 1.85);
-    cyl('wood', x, 0.76, z, 0.63, 0.63, 0.07, wood); cyl('metal', x, 0.38, z, 0.05, 0.075, 0.72, dark); cyl('metal', x, 0.085, z, 0.34, 0.36, 0.07, dark);
+    cyl(r.modern ? 'plaster' : 'wood', x, 0.76, z, 0.63, 0.63, 0.07, r.modern ? srgb('#e9e4d9') : wood);
+    cyl('metal', x, 0.38, z, r.modern ? 0.075 : 0.05, r.modern ? 0.11 : 0.075, 0.72, r.modern ? brass : dark);
+    cyl('metal', x, 0.085, z, 0.34, 0.36, 0.045, r.modern ? brass : dark);
     if (!render) interiorSolid(r, x, z, 1.13, 1.13);
     cyl('plaster', x - 0.18, 0.802, z, 0.11, 0.095, 0.017, srgb('#e8e3d7'));
     cyl('plaster', x - 0.18, 0.86, z, 0.066, 0.05, 0.105, srgb('#e8e3d7')); cyl('metal', x - 0.18, 0.915, z, 0.053, 0.053, 0.008, srgb('#463329'));
@@ -239,12 +267,14 @@ function interiorRecipe(r, render) {
   };
   const shelf = (x, z, wide, rot = 0, books = true) => {
     contact(x, z, wide + 0.5, 0.9);
-    box('wood', x, 1.25, z, wide, 2.5, 0.12, dark, rot);
+    if (!r.modern) box('wood', x, 1.25, z, wide, 2.5, 0.12, dark, rot);
     const T = (a, b) => [x + a * Math.cos(rot) + b * Math.sin(rot), z - a * Math.sin(rot) + b * Math.cos(rot)];
+    if (r.modern) for (const a of [-wide / 2 + 0.025, 0, wide / 2 - 0.025]) { const p = T(a, 0.1); box('metal', p[0], 1.25, p[1], 0.035, 2.5, 0.30, brass, rot); }
     for (let row = 0; row < 5; row++) {
       const yy = 0.18 + row * 0.48, p = T(0, 0.13);
       box('wood', p[0], yy, p[1], wide, 0.045, 0.4, wood, rot);
       for (let j = 0; j < Math.floor(wide / 0.16); j++) {
+        if (r.modern && j % 9 > 5) continue;
         const h = 0.24 + random() * 0.15, p2 = T(-wide / 2 + 0.1 + j * 0.16, 0.13);
         if (books) box('fabric', p2[0], yy + h / 2 + 0.024, p2[1], 0.11 + random() * 0.025, h, 0.22, srgb(['#536760', '#a56c54', '#c0b78c', '#60747c', '#786057'][Math.floor(random() * 5)]), rot);
         else if (j % 3 === 0) cyl('plaster', p2[0], yy + 0.1, p2[1], 0.07, 0.1, 0.16, linen);
@@ -253,6 +283,17 @@ function interiorRecipe(r, render) {
     if (!render) { const p = T(0, 0.13); interiorSolid(r, p[0], p[1], wide, 0.42, rot); }
   };
   const art = (x, y, z, w, h, rot = 0) => {
+    if (r.modern) {
+      const normal = [Math.sin(rot), Math.cos(rot)], tangent = [Math.cos(rot), -Math.sin(rot)];
+      box('wood', x, y, z, w + 0.035, h + 0.035, 0.045, wood, rot);
+      box('plaster', x + normal[0] * 0.029, y, z + normal[1] * 0.029, w, h, 0.02, srgb('#f1eee4'), rot);
+      box('fabric', x - tangent[0] * w * 0.18 + normal[0] * 0.043, y - h * 0.12, z - tangent[1] * w * 0.18 + normal[1] * 0.043, w * 0.27, h * 0.52, 0.014, srgb('#96aa99'), rot);
+      if (render) {
+        const disc = new THREE.CircleGeometry(Math.min(w, h) * 0.24, 40);
+        addGeo(bin('fabric'), disc, x + tangent[0] * w * 0.18 + normal[0] * 0.055, y + h * 0.12, z + tangent[1] * w * 0.18 + normal[1] * 0.055, rot, 1, srgb('#cfbca4')); disc.dispose();
+      }
+      return;
+    }
     box('wood', x, y, z, w + 0.09, h + 0.09, 0.07, dark, rot);
     const normal = [Math.sin(rot), Math.cos(rot)];
     box('plaster', x + normal[0] * 0.042, y, z + normal[1] * 0.042, w, h, 0.02, srgb('#c3cbbd'), rot);
@@ -260,19 +301,28 @@ function interiorRecipe(r, render) {
   };
   if (r.type.kind === 'cafe') {
     const back = -hd + 2.25, counterW = Math.min(4.8, r.w - 2.7), counterX = -0.35;
-    rounded('wood', counterX, 0.53, back, counterW, 1.01, 0.84, 0.045, wood);
+    rounded(r.modern ? 'plaster' : 'wood', counterX, 0.53, back, counterW, 1.01, 0.84, r.modern ? 0.16 : 0.045, r.modern ? srgb('#e3e5d9') : wood);
     if (!render) interiorSolid(r, counterX, back, counterW, 0.84);
     contact(counterX, back, counterW + 0.7, 1.45);
     rounded('plaster', counterX, 1.075, back, counterW + 0.14, 0.1, 0.98, 0.035, srgb('#d9d0bc'));
-    // Fluted cabinet front and recessed dark toe kick.
+    if (!r.modern) {
+    // Fluted cabinet front and recessed dark toe kick in the historic cafes.
     for (let x = counterX - counterW / 2 + 0.12; x < counterX + counterW / 2; x += 0.13) rounded('wood', x, 0.57, back + 0.433, 0.038, 0.76, 0.038, 0.014, wood);
     box('trim', counterX, 0.09, back + 0.435, counterW - 0.16, 0.12, 0.03, srgb('#453a30'));
     box('metal', counterX, 0.38, back + 0.63, counterW - 0.4, 0.035, 0.035, brass);
     for (const x of [-counterW / 2 + 0.45, counterW / 2 - 0.6]) box('metal', x, 0.3, back + 0.53, 0.035, 0.2, 0.23, brass);
+    } else {
+      rounded('wood', counterX - counterW * 0.28, 0.56, back + 0.43, counterW * 0.34, 0.77, 0.022, 0.01, wood);
+      box('trim', counterX, 0.087, back + 0.39, counterW - 0.30, 0.055, 0.025, dark);
+    }
     // A tiled prep alcove with a human-sized worktop; individual grout joints.
     box('plaster', 0, 1.71, -hd + 0.305, Math.min(r.w - 0.7, 6.3), 2.08, 0.05, srgb('#b5b4a0'));
     const tileW = Math.min(r.w - 0.8, 6.15);
-    for (let row = 0; row < 8; row++) for (let xx = -tileW / 2 + 0.16; xx < tileW / 2 - 0.1; xx += 0.32) {
+    if (r.modern) {
+      box('plaster', 0, 1.79, -hd + 0.345, tileW, 1.94, 0.035, srgb('#d4ddd2'));
+      // Tall ceramic tiles make a calm, continuous prep wall.
+      for (let xx = -tileW / 2 + 0.15; xx < tileW / 2 - 0.1; xx += 0.30) box('plaster', xx, 1.79, -hd + 0.369, 0.286, 1.92, 0.016, srgb('#dce3d7'));
+    } else for (let row = 0; row < 8; row++) for (let xx = -tileW / 2 + 0.16; xx < tileW / 2 - 0.1; xx += 0.32) {
       box('plaster', xx, 0.82 + row * 0.23, -hd + 0.345, 0.307, 0.217, 0.025, srgb(['#81958a', '#8d9f91', '#9aab9c'][Math.floor(random() * 3)]));
     }
     box('wood', 0, 0.49, -hd + 0.76, tileW, 0.86, 0.65, dark, 0, true);
@@ -306,14 +356,14 @@ function interiorRecipe(r, render) {
       rounded('fabric', x, 1.26, z, 0.19, 0.11, 0.11, 0.04, srgb('#b97d3e'), 0.25);
     }
     // Open shelves stop below the menu, preserving a believable prep zone.
-    for (const y of [1.68, 2.12]) {
+    for (const y of (r.modern ? [1.88] : [1.68, 2.12])) {
       box('wood', 0, y, -hd + 0.58, tileW - 0.35, 0.055, 0.4, wood);
-      for (let x = -tileW / 2 + 0.38; x < -1.1; x += 0.31) {
+      for (let x = -tileW / 2 + 0.38; x < -1.1; x += r.modern ? 0.5 : 0.31) {
         cyl('glass', x, y + 0.2, -hd + 0.54, 0.11, 0.11, 0.32, srgb('#c3c6a9'));
         cyl('wood', x, y + 0.16, -hd + 0.54, 0.095, 0.095, 0.21, srgb('#8d7553'));
         cyl('metal', x, y + 0.37, -hd + 0.54, 0.112, 0.112, 0.032, brass);
       }
-      for (let x = 1.1; x < tileW / 2 - 0.3; x += 0.23) cyl('plaster', x, y + 0.11, -hd + 0.58, 0.071, 0.06, 0.18, srgb('#dfd2b8'));
+      for (let x = 1.1; x < tileW / 2 - 0.3; x += r.modern ? 0.38 : 0.23) cyl('plaster', x, y + 0.11, -hd + 0.58, 0.071, 0.06, 0.18, srgb('#dfd2b8'));
     }
     table(-hw + 2.0, hd - 2.3); if (r.w > 8.5) table(hw - 2.0, hd - 2.3);
     table(-hw + 2.0, -0.4); if (r.w > 9.5) table(hw - 2.0, -0.4);
@@ -321,7 +371,7 @@ function interiorRecipe(r, render) {
     art(hw - 0.32, 1.95, -0.5, 1.8, 1.1, -Math.PI / 2);
     art(-hw + 0.32, 1.93, -0.7, 1.35, 1.0, Math.PI / 2);
     // Slim wall panelling prevents the lower room becoming an empty plaster box.
-    for (const x of [-hw + 0.3, hw - 0.3]) {
+    if (!r.modern) for (const x of [-hw + 0.3, hw - 0.3]) {
       box('wood', x, 0.54, 0.1, 0.04, 0.92, r.d - 2.4, srgb('#a3aa96'));
       box('wood', x, 1.015, 0.1, 0.08, 0.065, r.d - 2.4, wood);
     }
@@ -337,7 +387,8 @@ function interiorRecipe(r, render) {
     for (const x of [-r.w * 0.28, r.w * 0.28]) { art(x, 1.85, -hd + 0.32, 1.7, 1.3); art(-hw + 0.32, 1.85, x, 1.65, 1.15, Math.PI / 2); }
     box('plaster', hw - 1.7, 0.53, -0.8, 0.86, 1, 0.86, srgb('#e4ded0'), 0, true);
     shape('metal', new THREE.TorusKnotGeometry(0.31, 0.09, 64, 9), hw - 1.7, 1.42, -0.8, 1, brass);
-    box('wood', -0.4, 0.43, 0, 1.9, 0.12, 0.65, wood, 0, true);
+    if (r.modern) { rounded('fabric', -0.4, 0.45, 0, 1.9, 0.16, 0.65, 0.075, linen); if (!render) interiorSolid(r, -0.4, 0, 1.9, 0.65); }
+    else box('wood', -0.4, 0.43, 0, 1.9, 0.12, 0.65, wood, 0, true);
     for (const x of [-1.14, 0.34]) box('metal', x, 0.23, 0, 0.075, 0.42, 0.6, dark);
     if (!render) r.seats.push({ pos: interiorWorld(r, -0.4, 1.12, 0), yaw: r.rot });
     pot(hw - 0.8, hd - 0.8, 1.6);
@@ -351,8 +402,15 @@ function interiorRecipe(r, render) {
     box('fabric', -hw + 1.55, 0.61, -hd + 1.7, 1.96, 0.3, 2.43, srgb('#d3c6ad'));
     box('fabric', -hw + 1.55, 0.81, -hd + 0.85, 1.65, 0.13, 0.49, srgb('#e8e0d0'));
     box('fabric', -hw + 1.55, 0.79, -hd + 2.2, 1.98, 0.06, 1.13, srgb('#77958b'));
-    box('fabric', -hw + 0.93, 0.56, 0.5, 1.2, 0.93, 2.6, srgb('#b29a7c'), 0, true);
-    box('fabric', -hw + 1.36, 0.66, 0.5, 0.36, 0.35, 2.32, srgb('#d1bfa0'));
+    if (r.modern) {
+      rounded('fabric', -hw + 0.93, 0.52, 0.5, 1.2, 0.82, 2.6, 0.17, linen);
+      rounded('fabric', -hw + 1.24, 0.62, 0.5, 0.58, 0.21, 2.27, 0.08, srgb('#e1e5d8'));
+      for (const z of [-0.22, 0.72]) rounded('fabric', -hw + 0.73, 0.88, z, 0.26, 0.44, 0.62, 0.10, srgb('#b0bda9'));
+      if (!render) interiorSolid(r, -hw + 0.93, 0.5, 1.2, 2.6);
+    } else {
+      box('fabric', -hw + 0.93, 0.56, 0.5, 1.2, 0.93, 2.6, srgb('#b29a7c'), 0, true);
+      box('fabric', -hw + 1.36, 0.66, 0.5, 0.36, 0.35, 2.32, srgb('#d1bfa0'));
+    }
     if (!render) r.seats.push({ pos: interiorWorld(r, -hw + 1.25, 1.25, 0.5), yaw: r.rot - Math.PI / 2 });
     box('wood', -hw + 2.4, 0.35, 0.5, 0.66, 0.6, 1.24, wood, 0, true);
     table(hw - 2.1, hd - 2.2); art(-hw + 0.32, 2.0, 0.5, 1.5, 1, Math.PI / 2);
@@ -360,9 +418,15 @@ function interiorRecipe(r, render) {
   }
   // Pendants and their diffusers are geometry, not flat light spots.
   for (const z of [-hd * 0.42, hd * 0.4]) {
-    cyl('metal', 0, 3.17, z, 0.013, 0.013, 0.68, dark);
-    cyl('metal', 0, 2.8, z, 0.11, 0.32, 0.24, brass);
-    cyl('glow', 0, 2.675, z, 0.28, 0.28, 0.015, srgb('#ffe2a5'));
+    if (r.modern) {
+      cyl('metal', 0, 3.19, z, 0.008, 0.008, 0.61, brass);
+      cyl('metal', 0, 2.94, z, 0.055, 0.055, 0.10, brass);
+      shape('glow', new THREE.SphereGeometry(0.26, 20, 12), 0, 2.72, z, new THREE.Vector3(1.18, 0.72, 1.18), srgb('#fff6df'));
+    } else {
+      cyl('metal', 0, 3.17, z, 0.013, 0.013, 0.68, dark);
+      cyl('metal', 0, 2.8, z, 0.11, 0.32, 0.24, brass);
+      cyl('glow', 0, 2.675, z, 0.28, 0.28, 0.015, srgb('#ffe2a5'));
+    }
   }
   box('plaster', r.dw / 2 + 0.37, 1.27, hd - 0.305, 0.1, 0.16, 0.03, srgb('#d6d3c9'));
   if (!render) return;
@@ -374,26 +438,32 @@ function interiorRecipe(r, render) {
   }
   // Door leaf swings inward from a real hinge. Only these nearby meshes animate.
   const pivot = new THREE.Group(); pivot.position.set(-r.dw / 2, 0.06, hd - 0.15); group.add(pivot);
-  const db = new GeoBuilder(), dg = new GeoBuilder(), dm = new GeoBuilder(), frameCol = srgb(r.type.color);
-  for (const x of [0.07, r.dw - 0.07]) boxW(db, x, 1.28, 0, 0.14, 2.56, 0.075, 0, frameCol);
-  for (const [y, h] of [[0.17, 0.34], [2.5, 0.13], [0.83, 0.075]]) boxW(db, r.dw / 2, y, 0, r.dw, h, 0.075, 0, frameCol);
-  boxW(dg, r.dw / 2, 1.65, 0, r.dw - 0.25, 1.55, 0.012, 0, srgb('#bdd5d4'));
+  const db = new GeoBuilder(), dg = new GeoBuilder(), dm = new GeoBuilder(), frameCol = srgb(r.modern ? '#756e5e' : r.type.color);
+  if (r.modern) {
+    for (const x of [0.024, r.dw - 0.024]) boxW(db, x, 1.28, 0, 0.048, 2.56, 0.075, 0, frameCol);
+    for (const y of [0.03, 2.53]) boxW(db, r.dw / 2, y, 0, r.dw, 0.06, 0.075, 0, frameCol);
+    boxW(dg, r.dw / 2, 1.28, 0, r.dw - 0.10, 2.44, 0.012, 0, srgb('#e3eee7'));
+  } else {
+    for (const x of [0.07, r.dw - 0.07]) boxW(db, x, 1.28, 0, 0.14, 2.56, 0.075, 0, frameCol);
+    for (const [y, h] of [[0.17, 0.34], [2.5, 0.13], [0.83, 0.075]]) boxW(db, r.dw / 2, y, 0, r.dw, h, 0.075, 0, frameCol);
+    boxW(dg, r.dw / 2, 1.65, 0, r.dw - 0.25, 1.55, 0.012, 0, srgb('#bdd5d4'));
+  }
   boxW(dm, r.dw - 0.23, 1.08, 0.065, 0.03, 0.29, 0.035, 0, brass);
   for (const [b, mat] of [[db, MATS.roomTrim], [dg, MATS.roomGlass], [dm, MATS.roomMetal]]) { const m = new THREE.Mesh(b.build(), mat); m.castShadow = mat !== MATS.roomGlass; m.receiveShadow = true; pivot.add(m); }
   pivot.rotation.y = r.angle; r.door = pivot;
   // One tiny shared atlas-free sign texture per visible room, disposed with the room.
   const cv = document.createElement('canvas'); cv.width = 512; cv.height = 80;
-  const ctx = cv.getContext('2d'); ctx.fillStyle = r.type.color; ctx.fillRect(0, 0, 512, 80); ctx.fillStyle = '#ece4d4';
-  ctx.textAlign = 'center'; ctx.font = '26px Georgia, serif'; ctx.fillText(r.type.en, 256, 49);
+  const ctx = cv.getContext('2d'); ctx.fillStyle = r.modern ? '#eeede5' : r.type.color; ctx.fillRect(0, 0, 512, 80); ctx.fillStyle = r.modern ? '#40574d' : '#ece4d4';
+  ctx.textAlign = 'center'; ctx.font = r.modern ? '500 24px sans-serif' : '26px Georgia, serif'; ctx.fillText(r.type.en, 256, 49);
   const map = new THREE.CanvasTexture(cv); map.colorSpace = THREE.SRGBColorSpace;
   const signMat = new THREE.MeshStandardMaterial({ map, roughness: 0.65, metalness: 0.1 });
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(r.w - 0.8, 5.2), 0.68), signMat); sign.position.set(0, 3.18, hd + 0.02); group.add(sign);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(r.w - 0.8, r.modern ? 4.0 : 5.2), r.modern ? 0.40 : 0.68), signMat); sign.position.set(0, r.modern ? 3.78 : 3.18, hd + 0.02); group.add(sign);
   r.extraMaterials = [];
   if (r.type.kind === 'cafe') {
     const menuCanvas = document.createElement('canvas'); menuCanvas.width = 768; menuCanvas.height = 480;
-    const mc = menuCanvas.getContext('2d'); mc.fillStyle = '#283e35'; mc.fillRect(0, 0, 768, 480);
-    mc.strokeStyle = '#b0a780'; mc.lineWidth = 3; mc.strokeRect(18, 18, 732, 444);
-    mc.textAlign = 'center'; mc.fillStyle = '#e9ddc1'; mc.font = '42px Georgia, serif'; mc.fillText('M A R E A', 384, 80);
+    const mc = menuCanvas.getContext('2d'); mc.fillStyle = r.modern ? '#eeeee4' : '#283e35'; mc.fillRect(0, 0, 768, 480);
+    if (!r.modern) { mc.strokeStyle = '#b0a780'; mc.lineWidth = 3; mc.strokeRect(18, 18, 732, 444); }
+    mc.textAlign = 'center'; mc.fillStyle = r.modern ? '#456151' : '#e9ddc1'; mc.font = r.modern ? '500 36px sans-serif' : '42px Georgia, serif'; mc.fillText('M A R E A', 384, 80);
     mc.font = '16px sans-serif'; mc.fillText('COFFEE  /  SLOW MORNINGS  /  SEA AIR', 384, 116);
     mc.strokeStyle = '#849078'; mc.beginPath(); mc.moveTo(100, 141); mc.lineTo(668, 141); mc.stroke();
     const rows = [['ESPRESSO', '3.5'], ['FLAT WHITE', '4.8'], ['FILTER OF THE DAY', '4.5'], ['MATCHA LATTE', '5.2'], ['WARM PASTRY', '3.8']];
@@ -513,8 +583,9 @@ function updateInteriors(dt) {
   const wi = interiorWalkInfo(p.x, p.z, 0);
   const current = wi && wi.room;
   for (let i = 0; i < INTERIORS.lights.length; i++) {
-    const l = INTERIORS.lights[i]; l.intensity = current && current.lit ? (i ? 11 : 62) : 0;
+    const l = INTERIORS.lights[i]; l.intensity = current && current.lit ? (current.modern ? (i ? 18 : 78) : (i ? 11 : 62)) : 0;
     if (current) {
+      l.color.set(current.modern ? '#fff1dc' : (i ? '#ffdfb5' : '#ffe0b9'));
       l.position.copy(interiorWorld(current, 0, 2.66, (i ? 0.4 : -0.42) * current.d / 2));
       if (l.isSpotLight) { l.target.position.copy(interiorWorld(current, 0, 0, -0.1 * current.d)); l.target.updateMatrixWorld(); l.shadow.needsUpdate = current.lit; }
     }

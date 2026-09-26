@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>윤슬 항구 · Coastal World</title>
+<title>윤슬 · A quieter coast</title>
 <meta name="description" content="바다와 골목, 문을 열고 들어가는 작은 상점들. 윤슬 항구를 자유롭게 거닐어 보세요.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23182d35'/%3E%3Ccircle cx='22' cy='10' r='5' fill='%23f0b35a'/%3E%3Cpath d='M3 21q7-7 14 0t12 0M3 27q7-7 14 0t12 0' fill='none' stroke='%23a2d7d5' stroke-width='2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,13 +13,13 @@
   :root {
     color-scheme: dark;
     --ink: #0b0f14;
-    --glass: rgba(13, 18, 24, 0.58);
-    --glass-strong: rgba(13, 18, 24, 0.78);
-    --line: rgba(236, 228, 214, 0.12);
-    --paper: #efe8dc;
-    --muted: #a9b0b3;
-    --amber: #f0b35a;
-    --amber-ink: #2a1c08;
+    --glass: rgba(248, 249, 244, 0.79);
+    --glass-strong: rgba(248, 249, 244, 0.95);
+    --line: rgba(48, 68, 58, 0.14);
+    --paper: #273d34;
+    --muted: #65746b;
+    --amber: #cfddcc;
+    --amber-ink: #254332;
     --sea: #7fb7b0;
     --serif: 'Gowun Batang', 'Noto Serif KR', 'Apple SD Gothic Neo', serif;
     --sans: 'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
@@ -111,6 +111,28 @@
   @media (prefers-reduced-motion: reduce) {
     .hud, #loader, .hint, .drawer { transition: none; }
   }
+/* A light, quiet frame for the coastal architecture. */
+  .brand { background: var(--glass); border-radius: 18px; padding: 16px 20px; box-shadow: 0 8px 30px #193b2710; }
+  .brand h1 { font-family: var(--sans); font-size: 23px; font-weight: 500; letter-spacing: -.04em; }
+  .brand h1 small { font-size: 10px; letter-spacing: .14em; margin-left: 13px; }
+  .log { font-family: var(--sans); font-size: 11px; gap: 4px 14px; opacity: .85; }
+  .log span:nth-child(2) { display: none; }
+  .hud { padding: 24px; }
+  .chips { border-radius: 22px; padding: 6px 10px; }
+  .chips button { color: #4c6357; font-size: 12px; padding: 7px 10px; }
+  .chips button[aria-pressed="true"] { background: #dfe8d9; color: #244433; }
+  .seg { border-radius: 18px; padding: 5px; }
+  .seg button { border-radius: 13px; padding: 9px 18px; font-size: 12px; }
+  .icon-btn { background: var(--glass); border-radius: 50%; width: 42px; height: 42px; }
+  .fps { display: none; }
+  #loader { background: radial-gradient(100% 110% at 75% 10%, #dfebdf, #f4f1e7 65%, #d9e8e1); }
+  .ld h1 { font-family: var(--sans); font-weight: 400; letter-spacing: -.055em; }
+  .bar { background: #50695720; }
+  #load-bar { background: #638773; }
+  .hint kbd, .qual button, .play, .tg { background: #35523c07; }
+  input[type=range].plain::-webkit-slider-runnable-track { background: #32533b25; }
+  .tg::after { background: #81948a55; }
+  @media (max-width: 640px) { .hud { padding: 12px; } .brand { padding: 12px 14px; } .chips { padding: 4px; } .chips button { padding: 6px 8px; font-size: 11px; } .log { font-size: 10px; } }
 </style>
 </head>
 <body>
@@ -119,7 +141,7 @@
 <div id="loader" role="status" aria-live="polite">
   <div class="ld">
     <h1>윤슬 항구</h1>
-    <p>바다에서 골목으로, 골목에서 작은 가게 안으로.<br>빛과 바람이 머무는 도시를 준비하고 있어요.</p>
+    <p>바다에서 골목으로, 골목에서 작은 가게 안으로.<br>가벼운 바람, 느린 오후. 잠시 머물 곳을 준비하고 있어요.</p>
     <div class="bar"><div id="load-bar"></div></div>
     <div id="load-step">준비 중</div>
   </div>
@@ -128,7 +150,7 @@
 <div class="hud" id="hud">
   <div class="top">
     <div class="brand">
-      <h1>윤슬 항구 <small>Yunseul Harbor</small></h1>
+      <h1>윤슬 항구 <small>A quieter coast</small></h1>
       <div class="log" aria-live="off">
         <span>시각 <b id="lg-time">17:10</b></span>
         <span>태양 고도 <b id="lg-elev">0°</b></span>
@@ -164,7 +186,7 @@
   <h2>하늘과 시간</h2>
   <div class="row">
     <label for="in-time">시각 <output id="out-time">16:51</output></label>
-    <input id="in-time" type="range" min="0" max="24" step="0.01" value="16.85">
+    <input id="in-time" type="range" min="0" max="24" step="0.01" value="15.35">
     <div style="display:flex; gap:6px; flex-wrap:wrap">
       <button class="play" id="btn-flow" aria-pressed="false">시간 흐르게 하기</button>
       <button class="play" data-t="6.1">새벽</button>
@@ -175,11 +197,11 @@
   </div>
   <div class="row">
     <label for="in-cloud">구름 <output id="out-cloud">42%</output></label>
-    <input id="in-cloud" class="plain" type="range" min="0" max="0.85" step="0.01" value="0.42">
+    <input id="in-cloud" class="plain" type="range" min="0" max="0.85" step="0.01" value="0.27">
   </div>
   <div class="row">
     <label for="in-wind">바람 <output id="out-wind">3.2 m/s</output></label>
-    <input id="in-wind" class="plain" type="range" min="0" max="1" step="0.01" value="0.45">
+    <input id="in-wind" class="plain" type="range" min="0" max="1" step="0.01" value="0.22">
   </div>
   <h2>화면</h2>
   <div class="qual" id="qual" role="group" aria-label="그래픽 품질">
@@ -232,7 +254,7 @@ const IS_TOUCH = matchMedia('(pointer: coarse)').matches;
 const QUALITY = {
   low:    { pr: 0.7,  pixels: 1200000, shadow: 2048, msaa: 0, refl: 0,    cloudSteps: 12, rays: 24, grass: 0.3, trees: 0.45, bloom: true },
   medium: { pr: 0.9,  pixels: 2000000, shadow: 2048, msaa: 2, refl: 0.4,  cloudSteps: 18, rays: 36, grass: 0.6, trees: 0.7, bloom: true },
-  high:   { pr: 1.0,  pixels: 3200000, shadow: 4096, msaa: 4, refl: 0.5,  cloudSteps: 24, rays: 48, grass: 1.0, trees: 1.0, bloom: true },
+  high:   { pr: 1.0,  pixels: 3200000, shadow: 2048, msaa: 4, refl: 0.5,  cloudSteps: 24, rays: 48, grass: 1.0, trees: 1.0, bloom: true },
   ultra:  { pr: 1.5,  pixels: 5000000, shadow: 4096, msaa: 4, refl: 0.75, cloudSteps: 32, rays: 64, grass: 1.0, trees: 1.0, bloom: true },
 };
 let qualityName = IS_TOUCH ? 'low' : 'high';
@@ -1641,8 +1663,8 @@ const SKY_KEYS = [
   { e: -3, zen: [0.035, 0.07, 0.19], hor: [0.42, 0.24, 0.22], glow: [0.95, 0.32, 0.14], sun: [1.0, 0.42, 0.18], si: 0.2, env: 0.65, exp: 1.15, fog: 0.00028 },
   { e: 2, zen: [0.08, 0.16, 0.38], hor: [0.95, 0.52, 0.30], glow: [1.6, 0.62, 0.22], sun: [1.0, 0.50, 0.22], si: 2.2, env: 0.72, exp: 0.88, fog: 0.00030 },
   { e: 8, zen: [0.12, 0.26, 0.56], hor: [0.95, 0.72, 0.52], glow: [1.25, 0.72, 0.36], sun: [1.0, 0.68, 0.40], si: 3.0, env: 0.85, exp: 0.82, fog: 0.00026 },
-  { e: 20, zen: [0.11, 0.28, 0.66], hor: [0.66, 0.74, 0.84], glow: [0.7, 0.6, 0.45], sun: [1.0, 0.86, 0.70], si: 3.4, env: 0.95, exp: 0.86, fog: 0.00021 },
-  { e: 45, zen: [0.08, 0.25, 0.66], hor: [0.55, 0.68, 0.86], glow: [0.5, 0.5, 0.45], sun: [1.0, 0.95, 0.88], si: 3.7, env: 1.0, exp: 0.84, fog: 0.00018 },
+  { e: 20, zen: [0.11, 0.28, 0.66], hor: [0.66, 0.74, 0.84], glow: [0.7, 0.6, 0.45], sun: [1.0, 0.93, 0.82], si: 3.4, env: 1.05, exp: 0.90, fog: 0.00016 },
+  { e: 45, zen: [0.08, 0.25, 0.66], hor: [0.55, 0.68, 0.86], glow: [0.5, 0.5, 0.45], sun: [1.0, 0.95, 0.88], si: 3.7, env: 1.0, exp: 0.88, fog: 0.00013 },
   { e: 90, zen: [0.07, 0.23, 0.64], hor: [0.52, 0.66, 0.86], glow: [0.45, 0.45, 0.42], sun: [1.0, 0.97, 0.93], si: 3.8, env: 1.0, exp: 0.84, fog: 0.00017 },
 ];
 function skyPalette(elevDeg) {
@@ -1780,7 +1802,7 @@ vec3 starField(vec3 d) {
 `;
 
 let skyMesh, sunLight, skyMat;
-const skyState = { hour: 16.85, elev: 10, flow: false, flowRate: 1 / 60, cover: 0.42, envDirty: true, lastEnvElev: 999, lastEnvCover: -1 };
+const skyState = { hour: 15.35, elev: 24, flow: false, flowRate: 1 / 60, cover: 0.27, envDirty: true, lastEnvElev: 999, lastEnvCover: -1 };
 
 function buildSky() {
   skyMat = new THREE.ShaderMaterial({
@@ -1844,7 +1866,9 @@ function buildSky() {
   });
   skyMesh = new THREE.Mesh(new THREE.SphereGeometry(10000, 48, 24), skyMat);
   skyMesh.frustumCulled = false;
-  skyMesh.renderOrder = -10;
+  // Draw behind the opaque city after it has filled depth, so cloud raymarching
+  // only shades visible sky. Transparent water still renders afterwards.
+  skyMesh.renderOrder = 1000;
   scene.add(skyMesh);
 
   sunLight = new THREE.DirectionalLight(0xffffff, 3);
@@ -2039,7 +2063,7 @@ function makeWaterMaterial({ fixedDepth = -1, key = 'water' } = {}) {
       vec3 n2 = texture2D(uWaterN, p * 0.093 + vec2(-wd.y, wd.x) * uTime * 0.017 + wd * uTime * 0.03).xyz * 2.0 - 1.0;
       vec3 n3 = texture2D(uWaterN, p * 0.29 - wd * uTime * 0.05).xyz * 2.0 - 1.0;
       float fadeD = 1.0 - smoothstep(30.0, 600.0, dist) * 0.75;
-      float k = (0.22 + 0.55 * ws) * fadeD;
+      float k = (0.16 + 0.42 * ws) * fadeD;
       vec2 dn = (n1.xy * 0.55 + n2.xy * 0.45 + n3.xy * 0.35 * (1.0 - smoothstep(10.0, 80.0, dist))) * k;
       vec3 gN = normalize(vNormal);
       // vNormal is view space; rebuild world geometric normal from it
@@ -2052,8 +2076,8 @@ function makeWaterMaterial({ fixedDepth = -1, key = 'water' } = {}) {
       wA = 1.0 - exp(-thick * 0.32);
       wA = max(wA, smoothstep(0.0, 1.2, depth) * 0.25);
       // colours
-      vec3 deep = vec3(0.006, 0.045, 0.055);
-      vec3 shallow = vec3(0.05, 0.22, 0.2);
+      vec3 deep = vec3(0.012, 0.085, 0.105);
+      vec3 shallow = vec3(0.085, 0.30, 0.265);
       vec3 body = mix(shallow, deep, smoothstep(0.3, 7.0, depth));
       // shoreline + crest foam
       float fn = texture2D(uNoise, p * 0.23 + vec2(uTime * 0.012, -uTime * 0.008)).a;
@@ -2066,7 +2090,7 @@ function makeWaterMaterial({ fixedDepth = -1, key = 'water' } = {}) {
       body = mix(body, vec3(0.8, 0.84, 0.86), wFoam);
       wA = mix(wA, 1.0, wFoam);
       diffuseColor.rgb = body;
-      wRough = mix(0.035, 0.16, smoothstep(40.0, 900.0, dist));
+      wRough = mix(0.065, 0.20, smoothstep(40.0, 900.0, dist));
       wRough = mix(wRough, 0.7, wFoam);
     `,
     fRough: 'roughnessFactor = wRough;',
@@ -2076,7 +2100,7 @@ function makeWaterMaterial({ fixedDepth = -1, key = 'water' } = {}) {
       if (uReflOn > 0.5 && ${fd} < 0.0) {
         vec4 rc = uReflMat * vec4(vWPos.x, 0.0, vWPos.z, 1.0);
         if (rc.w > 0.0001) {
-          vec2 ruv = rc.xy / rc.w + (wN.xz) * 0.025 * (1.0 - wFoam);
+          vec2 ruv = rc.xy / rc.w + (wN.xz) * 0.018 * (1.0 - wFoam);
           vec3 rcol = texture2D(uRefl, clamp(ruv, 0.001, 0.999)).rgb;
           float edge = smoothstep(0.0, 0.03, ruv.x) * (1.0 - smoothstep(0.97, 1.0, ruv.x))
             * smoothstep(0.0, 0.03, ruv.y) * (1.0 - smoothstep(0.97, 1.0, ruv.y));
@@ -2314,8 +2338,8 @@ class SunShaftsPass extends Pass {
 const GradeShader = {
   uniforms: {
     tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
-    uVig: { value: 0.14 }, uSat: { value: 1.025 }, uCon: { value: 1.025 }, uGrain: { value: 0.003 }, uCA: { value: 0 },
-    uWarm: { value: new THREE.Vector3(1.01, 1.0, 0.985) }, uShadowTint: { value: new THREE.Vector3(0.99, 1.0, 1.02) },
+    uVig: { value: 0.065 }, uSat: { value: 1.01 }, uCon: { value: 1.015 }, uGrain: { value: 0.001 }, uCA: { value: 0 },
+    uWarm: { value: new THREE.Vector3(1.005, 1.0, 0.995) }, uShadowTint: { value: new THREE.Vector3(0.99, 1.015, 1.02) },
   },
   vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */ `
@@ -2396,9 +2420,9 @@ function updatePost(t) {
 // ============================================================================
 
 const VIEWS = [
-  { key: '1', name: '항구', pos: [230, 14, 190], tgt: [60, 6, 150] },
+  { key: '1', name: '해안 산책로', pos: [96, 9.6, 142], tgt: [51, 9, 102] },
   { key: '2', name: '운하', pos: [0, 5.3, 63], tgt: [0, 2.2, -40] },
-  { key: '3', name: '광장', pos: [18, 4.0, 0], tgt: [38, 6, -30] },
+  { key: '3', name: '광장', pos: [27, 4.3, 6], tgt: [36, 5, -24] },
   { key: '4', name: '공원', pos: [163, 4.4, -122], tgt: [180, 1.0, -162] },
   { key: '5', name: '언덕', pos: [-70, 96, -430], tgt: [10, 0, 60] },
   { key: '6', name: '등대', pos: [470, 62, 300], tgt: [110, 6, 110] },
@@ -2580,6 +2604,7 @@ function showHint(html) {
 function goToView(i) {
   const v = VIEWS[i];
   if (!v) return;
+  document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.view) === i)));
   if (typeof leaveInteriorSeat === 'function') leaveInteriorSeat();
   if (CTRL.mode === 'cine') setMode('orbit');
   const from = camera.position.clone();
@@ -3094,17 +3119,17 @@ function makeStoneMaterial() {
       vec3 sAlb; float sRough; vec3 sNT;
       void stone() {
         vec2 p = vUvM;
-        float row = floor(p.y / 0.42);
-        float by = fract(p.y / 0.42);
-        float len = 0.9 + 0.35 * hash11(row * 3.1);
+        float row = floor(p.y / 0.72);
+        float by = fract(p.y / 0.72);
+        float len = 1.8 + 0.2 * hash11(row * 3.1);
         float bx = fract(p.x / len + hash11(row) );
         float id = floor(p.x / len + hash11(row));
         float hb = hash12(vec2(id, row));
-        float m = min(min(bx, 1.0 - bx) * len, min(by, 1.0 - by) * 0.42);
+        float m = min(min(bx, 1.0 - bx) * len, min(by, 1.0 - by) * 0.72);
         float n1 = texture2D(uNoise, p * 0.7).b;
         float n2 = texture2D(uNoise, p * 0.08).r;
-        vec3 c = vColor.rgb * (0.78 + 0.34 * hb) * (0.85 + 0.3 * n1) * (0.9 + 0.2 * n2);
-        c = mix(c * 0.45, c, smoothstep(0.0, 0.03, m));
+        vec3 c = mix(vColor.rgb, vec3(0.72, 0.70, 0.64), 0.30) * (0.95 + 0.09 * hb) * (0.97 + 0.06 * n1);
+        c = mix(c * 0.82, c, smoothstep(0.0, 0.015, m));
         float y = vWPos.y;
         float wet = 1.0 - smoothstep(0.1, 0.6, y - sin(uTime * 0.8 + vWPos.x * 0.1) * 0.08);
         c = mix(c, c * vec3(0.45, 0.5, 0.42), wet);
@@ -3131,6 +3156,20 @@ function makeStoneMaterial() {
 
 // --- paving (roads, walks) uses baked textures with world-space uv ---------------
 function makePavingMaterial(set, key, extra = {}) {
+  if (key === 'cobble') {
+    // Quiet mineral paving, with broad saw-cut joints instead of a busy cobble grid.
+    const mat = new THREE.MeshStandardMaterial({ color: '#a9aaa3', roughness: 0.89, metalness: 0, ...extra });
+    patch(mat, { key: 'mineral-promenade', fColor: /* glsl */ `
+      vec2 p = vWPos.xz;
+      float grit = texture2D(uNoise, p * 1.9).b;
+      float broad = texture2D(uNoise, p * 0.022).g;
+      diffuseColor.rgb *= 0.96 + 0.055 * grit + 0.045 * broad;
+      vec2 cell = abs(fract(p / 3.6) - 0.5) * 3.6;
+      float joint = 1.0 - smoothstep(0.009, 0.024 + length(fwidth(p)), min(cell.x, cell.y));
+      diffuseColor.rgb *= 1.0 - joint * 0.10;
+    ` });
+    return mat;
+  }
   const mat = new THREE.MeshStandardMaterial({
     map: set.map, normalMap: set.normalMap, roughnessMap: set.orm, aoMap: set.orm,
       normalScale: new THREE.Vector2(0.35, 0.35), roughness: set.orm ? 1 : 0.83, metalness: 0, aoMapIntensity: 0.35, ...extra,
@@ -3139,11 +3178,11 @@ function makePavingMaterial(set, key, extra = {}) {
     key,
     fColor: /* glsl */ `
       float pvN = texture2D(uNoise, vWPos.xz * 0.02).r;
-      diffuseColor.rgb *= 0.86 + 0.28 * pvN;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.64, 0.62, 0.55), 0.36) * (0.97 + 0.06 * pvN);
       // wet sheen along gutters / low spots
       float wetP = smoothstep(0.68, 0.9, texture2D(uNoise, vWPos.xz * 0.045).g);
     `,
-    fRough: 'roughnessFactor = mix(roughnessFactor, 0.28, wetP * 0.7);',
+    fRough: 'roughnessFactor = mix(roughnessFactor, 0.62, wetP * 0.3);',
   });
   return mat;
 }
@@ -3316,6 +3355,207 @@ const ROOF_SLATE = ['#4c525b', '#434951', '#5a5f66'].map(srgb);
 const AWNING = [['#2f5d4a', '#efe6d2'], ['#9c3a2e', '#f1e7d4'], ['#27405e', '#f0ead8'], ['#c68a2e', '#f2ead6'], ['#5b3a52', '#eee4d2']].map(([a, b]) => [srgb(a), srgb(b)]);
 const TRIM = srgb('#ddd4c4');
 
+const MODERN_PALETTE = ['#eee9dd', '#d8d7c9', '#c4cbbd', '#e4dccd', '#d0d9d4', '#f3eee3'].map(srgb);
+const MODERN_BRONZE = srgb('#55564c');
+const MODERN_GLASS = ['#96a69b', '#a4ada0', '#8b9b92', '#b0b5a7'].map(srgb);
+const MODERN_LEAF = new THREE.SphereGeometry(1, 8, 5);
+
+// City addresses and hillside placements are already referenced by saved views.
+// Preserve the former generator's random-stream consumption while architecture
+// itself uses only its supplied seed, so the makeover does not move the city.
+function preserveBuildingLayoutSequence(o) {
+  if (o.roof === 'flat' && o.w > 7 && o.d > 7) { rand(); rand(); if (rand() < 0.6) { rand(); rand(); rand(); } }
+  if (o.roof !== 'flat' && o.floors >= 2) {
+    const count = 1 + (rand() < 0.5 ? 1 : 0);
+    for (let i = 0; i < count; i++) { rand(); rand(); rand(); rand(); }
+  }
+  const n = Math.max(1, Math.floor(o.w / 3.1 + 0.3));
+  if (o.balMode > 0 && o.balMode !== 3 && o.floors >= 2) {
+    for (let f = 1; f < o.floors; f++) for (let b = 0; b < n; b++) if (o.balMode !== 2 || b === Math.floor(n / 2)) rand();
+  }
+  if (o.flowers && o.floors >= 2) for (let f = 1; f < o.floors; f++) for (let b = 0; b < n; b++) {
+    if (rand() > 0.4) continue;
+    if (o.balMode === 1 || (o.balMode === 2 && b === Math.floor(n / 2)) || (o.balMode === 3 && f === 1)) continue;
+    rand();
+  }
+}
+
+// Six distinct contemporary coastal forms. Upper glazing is opaque physically
+// shaded geometry, keeping reflections and avoiding city-wide alpha overdraw.
+// Ground floors remain the real, furnished, openable rooms from interiors.js.
+function addModernBuilding(o) {
+  preserveBuildingLayoutSequence(o);
+  const style = Math.abs(Math.floor(o.seed * 19.17 + Math.abs(o.cx) * 0.037 + Math.abs(o.cz) * 0.051)) % 6;
+  const white = MODERN_PALETTE[Math.floor(o.seed * 3.71) % MODERN_PALETTE.length];
+  const glass = MODERN_GLASS[Math.floor(o.seed) % MODERN_GLASS.length];
+  const sage = srgb('#b1bdad'), oak = srgb('#b0a081'), paving = srgb('#dbd8cd');
+  o.modern = true; o.modernStyle = style; o.color = white;
+  const c = Math.cos(o.rot), s = Math.sin(o.rot), w = o.w, d = o.d, hw = w / 2, hd = d / 2;
+  const H = 4.2 + Math.max(0, o.floors - 1) * o.fh;
+  const L = (x, y, z) => new V3(o.cx + x * c + z * s, o.baseY + y, o.cz - x * s + z * c);
+  const UV = (p, n) => worldUV(p, n).map(v => v / 3.4);
+  const B = (kind, x, y, z, sx, sy, sz, color = white, properties = [0.75, 0, 0]) => {
+    const p = L(x, y, z); boxW(tb(kind, o.cx, o.cz), p.x, p.y, p.z, sx, sy, sz, o.rot, color, kind === 'props' ? { aP: properties } : {}, 'px nx py ny pz nz', UV);
+  };
+  const pane = (x, y, z, sx, sy, sz = 0.06) => B('props', x, y, z, sx, sy, sz, glass, [0.25, 0.27, 0.0]);
+  const edge = (x, y, z, sx, sy, sz) => B('roomMetal', x, y, z, sx, sy, sz, MODERN_BRONZE);
+  const roundShape = (sx, sz, radius) => {
+    const x = sx / 2, z = sz / 2, r = Math.min(radius, x - 0.04, z - 0.04), p = new THREE.Shape();
+    p.moveTo(-x + r, -z); p.lineTo(x - r, -z); p.quadraticCurveTo(x, -z, x, -z + r);
+    p.lineTo(x, z - r); p.quadraticCurveTo(x, z, x - r, z); p.lineTo(-x + r, z); p.quadraticCurveTo(-x, z, -x, z - r);
+    p.lineTo(-x, -z + r); p.quadraticCurveTo(-x, -z, -x + r, -z); return p;
+  };
+  const rounded = (kind, x, y, z, sx, sy, sz, radius, color, properties = [0.8, 0, 0]) => {
+    const g = new THREE.ExtrudeGeometry(roundShape(sx, sz, radius), { depth: sy, bevelEnabled: false, curveSegments: 5, steps: 1 });
+    g.rotateX(-Math.PI / 2);
+    const p = L(x, y, z); addGeo(tb(kind, o.cx, o.cz), g, p.x, p.y, p.z, o.rot, 1, color, kind === 'props' ? { aP: properties } : {}); g.dispose();
+  };
+  const ribbon = (x, y, z, sx, sz, radius, h, color = glass, properties = [0.27, 0.23, 0]) => {
+    const points = roundShape(sx, sz, radius).getPoints(5), b = tb('props', o.cx, o.cz);
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i], q = points[i + 1];
+      quadW(b, L(x + a.x, y, z - a.y), L(x + q.x, y, z - q.y), L(x + q.x, y + h, z - q.y), L(x + a.x, y + h, z - a.y), color, { aP: properties }, UV);
+    }
+  };
+  const shrub = (x, y, z, size = 0.65) => {
+    const p = L(x, y + size * 0.48, z);
+    addGeo(tb('props', o.cx, o.cz), MODERN_LEAF, p.x, p.y, p.z, o.rot + o.seed, new V3(size, size * 0.72, size * 0.78), srgb('#879674'), { aP: [0.97, 0, 0] });
+  };
+  const planter = (x, y, z, sx = 2.2, sz = 0.8) => {
+    B('roomPlaster', x, y + 0.19, z, sx, 0.38, sz, sage);
+    B('props', x, y + 0.385, z, sx - 0.13, 0.025, sz - 0.12, srgb('#596e50'));
+    shrub(x - sx * 0.22, y + 0.35, z, Math.min(0.6, sz * 0.8)); shrub(x + sx * 0.23, y + 0.35, z, Math.min(0.7, sz * 0.85));
+  };
+  const roofGarden = (x, y, z, sx, sz) => {
+    B('roomPlaster', x, y + 0.1, z, sx, 0.2, sz, paving);
+    B('props', x, y + 0.215, z, Math.max(1, sx - 0.65), 0.025, Math.max(1, sz - 0.65), srgb('#a4ad91'));
+    planter(x - sx * 0.25, y + 0.23, z + sz * 0.27, Math.max(1.1, sx * 0.35), 0.9);
+    planter(x + sx * 0.24, y + 0.23, z - sz * 0.25, Math.max(1.1, sx * 0.32), 0.85);
+  };
+  const front = (x, floor, z, sx, height, color = white, fins = false) => {
+    // Full-height panes sit behind a slim structural frame with metre-scale bays.
+    pane(x, floor + height / 2, z, sx - 0.4, height - 0.34);
+    B('roomPlaster', x, floor + 0.12, z + 0.035, sx, 0.24, 0.21, color);
+    B('roomPlaster', x, floor + height - 0.12, z + 0.035, sx, 0.24, 0.23, color);
+    const bays = Math.max(2, Math.round(sx / 2.2));
+    for (let b = 0; b <= bays; b++) {
+      const px = x - sx / 2 + 0.2 + b * (sx - 0.4) / bays;
+      edge(px, floor + height / 2, z + 0.045, 0.052, height - 0.25, 0.095);
+      if (fins && b < bays) B('roomWood', px + 0.24, floor + height / 2, z + 0.19, 0.085, height - 0.16, 0.48, oak);
+    }
+  };
+  const volume = (x, floor, z, sx, height, sz, color = white, fins = false) => {
+    B('roomPlaster', x, floor + height / 2, z, sx, height, sz, color);
+    front(x, floor, z + sz / 2 + 0.01, sx - 0.15, height, color, fins);
+    front(x, floor, z - sz / 2 - 0.015, sx - 0.18, height, color, false);
+    // Exposed return glazing and horizontal reveals wrap the corner.
+    for (const side of [-1, 1]) {
+      pane(x + side * (sx / 2 + 0.014), floor + height * 0.52, z + sz * 0.19, 0.055, height * 0.66, sz * 0.5);
+      for (let j = 0; j < 3; j++) edge(x + side * (sx / 2 + 0.047), floor + height * 0.52, z - sz * 0.06 + j * sz * 0.25, 0.07, height * 0.67, 0.052);
+    }
+  };
+
+  if (style === 0) {
+    // Soft rounded corners with continuous projecting ribbon terraces.
+    for (let f = 1; f < o.floors; f++) {
+      const y = 4.2 + (f - 1) * o.fh;
+      rounded('props', 0, y, -0.3, w - 0.8, o.fh, d - 0.7, 1.05, glass, [0.25, 0.26, 0]);
+      rounded('roomPlaster', 0, y - 0.07, 0.1, w + 0.13, 0.25, d + 0.2, 1.22, white);
+      ribbon(0, y + 0.19, 0.1, w + 0.02, d + 0.06, 1.2, 0.81);
+      ribbon(0, y + 0.99, 0.1, w + 0.03, d + 0.07, 1.2, 0.055, MODERN_BRONZE, [0.4, 0.6, 0]);
+      for (let x = -hw + 1.1; x < hw - 0.5; x += 1.8) edge(x, y + o.fh * 0.53, hd - 0.61, 0.06, o.fh - 0.18, 0.09);
+      if (f === 1 || f === o.floors - 1) planter(-w * 0.23, y + 0.18, hd - 0.18, w * 0.34, 0.8);
+    }
+    rounded('roomPlaster', 0, H, 0, w + 0.16, 0.25, d + 0.22, 1.25, white);
+    roofGarden(0, H + 0.24, -0.25, w - 0.7, d - 0.8);
+  } else if (style === 1) {
+    // Each storey recedes to expose a deep planted terrace, not painted setbacks.
+    for (let f = 1; f < o.floors; f++) {
+      const y = 4.2 + (f - 1) * o.fh, setback = (f - 1) * 0.73;
+      const sw = Math.max(w * 0.61, w - (f - 1) * 0.5), sd = Math.max(d * 0.53, d - setback * 1.3), z = -setback * 0.4;
+      B('roomPlaster', 0, y + 0.09, z + 0.32, sw + 0.18, 0.22, sd + 0.75, white);
+      volume(0, y + 0.18, z - 0.35, sw, o.fh - 0.18, sd - 0.7, f % 2 ? white : sage);
+      planter(-sw * 0.26, y + 0.21, z + sd / 2 + 0.21, sw * 0.38, 0.65);
+      edge(sw * 0.15, y + 0.92, z + sd / 2 + 0.32, sw * 0.59, 0.055, 0.055);
+    }
+    const inset = Math.max(0, o.floors - 2) * 0.73;
+    roofGarden(0, H, -inset * 0.4 - 0.35, Math.max(w * 0.61, w - Math.max(0, o.floors - 2) * 0.5), Math.max(d * 0.53, d - inset * 1.3) - 0.7);
+  } else if (style === 2) {
+    // Timber solar screens, long glazing, and a visibly floating pergola crown.
+    for (let f = 1; f < o.floors; f++) {
+      const y = 4.2 + (f - 1) * o.fh;
+      volume(0, y, -0.17, w - 0.16, o.fh, d - 0.34, white, true);
+      // A broad pale timber wall, with separate fine battens, balances the
+      // glazed right-hand bay and gives this family a residential pavilion face.
+      B('roomPlaster', -w * 0.255, y + o.fh / 2, hd - 0.16, w * 0.43, o.fh - 0.28, 0.19, srgb('#d6c6a6'));
+      for (let x = -hw + 0.37; x < -w * 0.055; x += 0.49) B('roomWood', x, y + o.fh / 2, hd - 0.045, 0.038, o.fh - 0.3, 0.06, srgb('#d5c9ad'));
+      for (let x = -hw + 0.44; x < -0.15; x += 0.31) B('roomWood', x, y + o.fh / 2, hd + 0.21, 0.075, o.fh - 0.1, 0.44, oak);
+      B('roomPlaster', 0, y - 0.07, 0, w + 0.1, 0.19, d + 0.1, paving);
+    }
+    roofGarden(0, H, -0.1, w, d - 0.2);
+    for (const x of [-hw + 0.5, hw - 0.5]) for (const z of [-hd + 0.6, hd - 0.8]) edge(x, H + 0.82, z, 0.075, 1.6, 0.075);
+    for (let x = -hw + 0.25; x < hw; x += 0.53) B('roomWood', x, H + 1.62, -0.08, 0.13, 0.14, d - 0.6, oak);
+  } else if (style === 3) {
+    // A glazed gallery beneath a thin roof wing and asymmetrical solid service core.
+    if (o.floors > 1) {
+      const tall = H - 4.2;
+      B('props', -0.32, 4.2 + tall / 2, -0.1, w - 0.85, tall, d - 0.35, glass, [0.24, 0.3, 0]);
+      B('roomPlaster', hw - 0.75, 4.2 + tall / 2, -0.1, 1.35, tall + 0.12, d - 0.15, white);
+      for (let x = -hw + 0.28; x < hw - 1.2; x += 1.7) edge(x, 4.2 + tall / 2, hd - 0.23, 0.055, tall, 0.1);
+      for (let f = 1; f < o.floors; f++) {
+        const y = 4.2 + (f - 1) * o.fh;
+        edge(-0.6, y + 0.12, hd - 0.22, w - 1.6, 0.09, 0.13);
+        B('roomPlaster', -0.42, y + 0.03, 0, w - 0.92, 0.12, d - 0.32, paving);
+      }
+    }
+    B('roomPlaster', 0, H + 0.12, 0.2, w + 0.35, 0.24, d + 0.7, white);
+    roofGarden(-0.4, H + 0.24, -0.2, w - 1.2, d - 1.2);
+    B('roomWood', -w * 0.18, H + 1.18, -0.45, w * 0.5, 0.11, d * 0.5, oak);
+    for (const x of [-w * 0.4, w * 0.04]) edge(x, H + 0.8, -0.45, 0.06, 0.76, d * 0.4);
+  } else if (style === 4) {
+    // Alternating cantilevered wings leave open loggias on opposite sides.
+    for (let f = 1; f < o.floors; f++) {
+      const y = 4.2 + (f - 1) * o.fh, side = f % 2 ? -1 : 1, x = side * w * 0.12, z = f % 2 ? 0.28 : -0.43;
+      const sw = w * (f === o.floors - 1 ? 0.68 : 0.75), sd = d * 0.86;
+      volume(x, y, z, sw, o.fh, sd, f % 2 ? white : sage);
+      B('roomPlaster', x, y - 0.08, z + 0.18, sw + 0.38, 0.26, sd + 0.55, white);
+      // Solid warm-rendered wings with one generous punched window contrast
+      // with the all-glazed gallery and the continuous curved ribbon family.
+      B('roomPlaster', x, y + o.fh / 2, z + sd / 2 + 0.09, sw - 0.13, o.fh - 0.28, 0.18, srgb(f % 2 ? '#e9e0cc' : '#d8d9c9'));
+      pane(x + sw * 0.14, y + o.fh * 0.54, z + sd / 2 + 0.22, sw * 0.49, o.fh * 0.57);
+      for (const xx of [x - sw * 0.105, x + sw * 0.385]) edge(xx, y + o.fh * 0.54, z + sd / 2 + 0.257, 0.042, o.fh * 0.59, 0.045);
+      B('roomPlaster', x + sw * 0.14, y + o.fh * 0.245, z + sd / 2 + 0.23, sw * 0.52, 0.07, 0.22, white);
+      B('roomWood', x - sw * 0.335, y + o.fh / 2, z + sd / 2 + 0.22, sw * 0.18, o.fh - 0.47, 0.12, srgb('#d1c4a8'));
+      planter(-side * w * 0.32, y + 0.07, hd - 1.02, w * 0.28, 0.86);
+      if (f === o.floors - 1) roofGarden(x, H, z, sw + 0.08, sd);
+    }
+    if (o.floors <= 1) roofGarden(0, H, 0, w, d);
+  } else {
+    // Twin pavilion wings joined at the back, with a genuine central roof court.
+    const wingW = w * 0.35, offset = w * 0.305;
+    for (let f = 1; f < o.floors; f++) {
+      const y = 4.2 + (f - 1) * o.fh;
+      volume(-offset, y, 0, wingW, o.fh, d - 0.25, white);
+      if (f < o.floors - 1 || o.floors <= 2) volume(offset, y, -0.25, wingW, o.fh, d - 0.75, sage);
+      B('roomPlaster', 0, y + o.fh / 2, -hd + 1.0, w * 0.65, o.fh, 1.8, white);
+      if (f % 2 === 0) {
+        pane(0, y + 0.54, 0.1, w * 0.35, 0.95, 0.06);
+        B('roomPlaster', 0, y + 0.02, -0.3, w * 0.37, 0.18, 1.05, paving);
+      }
+    }
+    if (o.floors > 1) {
+      roofGarden(-offset, H, 0, wingW + 0.06, d - 0.23);
+      roofGarden(offset, o.floors > 2 ? H - o.fh : H, -0.25, wingW + 0.06, d - 0.73);
+      planter(0, 4.25, hd * 0.4, Math.max(1, w * 0.2), 1.0);
+    } else roofGarden(0, H, 0, w, d);
+  }
+  o.roof = 'flat'; o.shutI = 0; o.balMode = 0; o.quoins = false; o.flowers = false;
+  const room = typeof registerInterior === 'function' ? registerInterior(o) : null;
+  CITYDATA.buildings.push({ cx: o.cx, cz: o.cz, w, d, rot: o.rot, H: H + (style === 2 ? 1.8 : 1.3), room, modern: true, modernStyle: style });
+  CITYDATA.modernStyles = CITYDATA.modernStyles || [0, 0, 0, 0, 0, 0]; CITYDATA.modernStyles[style]++;
+  if (!room) wgBlockOriented(o.cx, o.cz, w, d, o.rot, 0.2);
+}
+
 // --- one building -----------------------------------------------------------------
 // o: {cx, cz, w, d, rot, baseY, floors, fh, color, roof, roofColor, roofStyle,
 //     party:{left,right,back}, gType, shutI, wStyle, balMode, quoins, seed, awning, flowers}
@@ -3330,6 +3570,7 @@ function addBuilding(o) {
     }
     o.plinth += support - o.baseY; o.baseY = support;
   }
+  if (!o.historic) return addModernBuilding(o);
   const gh = 4.2;
   const H = o.floors <= 1 ? gh : gh + (o.floors - 1) * o.fh;
   const c = Math.cos(o.rot), s = Math.sin(o.rot);
@@ -3764,26 +4005,36 @@ function buildBridge(zc, halfW, hump, parX = 13) {
 // --- lamps, benches, trees along streets -------------------------------------------
 function addLamp(x, z, y = CITY.walk, style = 0) {
   const b = tb('props', x, z);
-  const iron = srgb('#1f2a26');
-  const ex = { aP: [0.45, 0.6, 0] };
-  const pole = new THREE.CylinderGeometry(0.055, 0.085, 3.7, 8, 1, true);
-  addGeo(b, pole, x, y + 1.85, z, 0, 1, iron, ex);
-  addGeo(b, new THREE.CylinderGeometry(0.16, 0.2, 0.45, 8), x, y + 0.22, z, 0, 1, iron, ex);
-  // lantern
-  addGeo(b, new THREE.CylinderGeometry(0.22, 0.13, 0.5, 6), x, y + 3.95, z, 0, 1, srgb('#ffd9a0'), { aP: [0.15, 0, 7] });
-  addGeo(b, new THREE.ConeGeometry(0.3, 0.28, 6), x, y + 4.34, z, 0, 1, iron, ex);
-  addGeo(b, new THREE.SphereGeometry(0.06, 6, 4), x, y + 4.5, z, 0, 1, iron, ex);
-  CITYDATA.lamps.push(new V3(x, y + 3.95, z));
+  const iron = srgb('#5b655f');
+  const ex = { aP: [0.5, 0.45, 0] };
+  const pole = new THREE.CylinderGeometry(0.045, 0.062, 3.72, 12, 1, true);
+  addGeo(b, pole, x, y + 1.86, z, 0, 1, iron, ex); pole.dispose();
+  // A slim disc luminaire, with a recessed warm underside instead of a lantern.
+  const cap = new THREE.CylinderGeometry(0.31, 0.33, 0.085, 20);
+  addGeo(b, cap, x, y + 3.74, z, 0, 1, iron, ex); cap.dispose();
+  const diffuser = new THREE.CylinderGeometry(0.271, 0.271, 0.018, 20);
+  addGeo(b, diffuser, x, y + 3.687, z, 0, 1, srgb('#ffe6bf'), { aP: [0.3, 0, 5] }); diffuser.dispose();
+  const foot = new THREE.CylinderGeometry(0.073, 0.09, 0.14, 12);
+  addGeo(b, foot, x, y + 0.07, z, 0, 1, iron, ex); foot.dispose();
+  CITYDATA.lamps.push(new V3(x, y + 3.69, z));
   wgSet(x - 0.3, z - 0.3, x + 0.3, z + 0.3, null, 1);
 }
 function addBench(x, z, rot, y = CITY.walk) {
   const wd = tb('wood', x, z), pb = tb('props', x, z);
   const c = Math.cos(rot), s = Math.sin(rot);
   const L = (lx, lz) => [x + lx * c + lz * s, z - lx * s + lz * c];
-  const wc = srgb('#8a6444');
+  const wc = srgb('#c5b393');
   for (let k = 0; k < 3; k++) { const [px, pz] = L(0, -0.2 + k * 0.17); boxW(wd, px, y + 0.45, pz, 1.8, 0.04, 0.13, rot, wc); }
   for (let k = 0; k < 2; k++) { const [px, pz] = L(0, -0.33 - 0.02); boxW(wd, px, y + 0.62 + k * 0.17, pz - 0 + 0, 1.8, 0.12, 0.04, rot, wc); }
-  for (const sx of [-0.8, 0.8]) { const [px, pz] = L(sx, -0.05); boxW(pb, px, y + 0.3, pz, 0.06, 0.6, 0.5, rot, srgb('#20262a'), { aP: [0.5, 0.6, 0] }); }
+  for (const sx of [-0.68, 0.68]) {
+    const [px, pz] = L(sx, -0.02);
+    const support = new THREE.CylinderGeometry(0.13, 0.16, 0.41, 12);
+    addGeo(pb, support, px, y + 0.205, pz, rot, 1, srgb('#c5c9bd'), { aP: [0.84, 0, 0] }); support.dispose();
+  }
+  for (const sx of [-0.85, 0.85]) {
+    const [px, pz] = L(sx, 0);
+    boxW(pb, px, y + 0.66, pz, 0.035, 0.035, 0.49, rot, srgb('#6b7064'), { aP: [0.45, 0.55, 0] });
+  }
   CITYDATA.benches.push({ x, z, rot });
 }
 
@@ -3895,7 +4146,7 @@ function buildCity() {
 
 // ---- 10_landmarks.js ----
 // ============================================================================
-// Landmarks: plaza (fountain, clock tower, cafe), park, piers, lighthouse,
+// Landmarks: plaza (fountain, light sculpture, cafe), park, piers, lighthouse,
 // hillside villas + chapel, beach huts
 // ============================================================================
 
@@ -3919,74 +4170,41 @@ function buildPlaza() {
   const cx = (Z.x0 + Z.x1) / 2, cz = (Z.z0 + Z.z1) / 2 + 3;
   const y = CITY.walk;
   const st = tb('stone', cx, cz), pb = tb('props', cx, cz);
-  const sc = srgb('#cdbfa6');
+  const sc = srgb('#e0d9c9');
   // fountain basin
   ringWall(st, cx, cz, 5.2, 5.75, y - 0.1, y + 0.55, 40, sc);
   quadW(st, new V3(cx - 5.3, y + 0.02, cz + 5.3), new V3(cx + 5.3, y + 0.02, cz + 5.3), new V3(cx + 5.3, y + 0.02, cz - 5.3), new V3(cx - 5.3, y + 0.02, cz - 5.3), srgb('#8f9990'), {}, (P) => [P.x, P.z]);
   const stoneP = { aP: [0.8, 0, 0] };
-  addGeo(pb, lathe([[0.001, 0], [0.75, 0], [0.62, 0.3], [0.5, 1.2], [0.7, 1.35]], 20), cx, y, cz, 0, 1, sc, stoneP);
-  addGeo(pb, lathe([[0.4, 0], [1.1, 0.12], [2.1, 0.35], [2.25, 0.5], [2.1, 0.52], [1.2, 0.35], [0.001, 0.32]], 32), cx, y + 1.3, cz, 0, 1, sc, stoneP);
-  addGeo(pb, lathe([[0.001, 0], [0.32, 0], [0.22, 0.4], [0.18, 1.1], [0.3, 1.2]], 16), cx, y + 1.8, cz, 0, 1, sc, stoneP);
-  addGeo(pb, lathe([[0.2, 0], [0.6, 0.08], [1.05, 0.24], [1.12, 0.36], [1.02, 0.37], [0.5, 0.25], [0.001, 0.22]], 28), cx, y + 2.95, cz, 0, 1, sc, stoneP);
-  addGeo(pb, lathe([[0.001, 0], [0.16, 0], [0.12, 0.35], [0.2, 0.45], [0.001, 0.7]], 12), cx, y + 3.25, cz, 0, 1, sc, stoneP);
+  // Clean stacked limestone bowls retain the existing water levels and jets.
+  addGeo(pb, new THREE.CylinderGeometry(0.36, 0.42, 1.5, 32), cx, y + 0.75, cz, 0, 1, sc, stoneP);
+  addGeo(pb, lathe([[0.001, 0.16], [1.92, 0.16], [2.25, 0.44], [2.25, 0.5], [2.1, 0.5], [1.98, 0.31], [0.001, 0.31]], 48), cx, y + 1.3, cz, 0, 1, sc, stoneP);
+  addGeo(pb, new THREE.CylinderGeometry(0.2, 0.24, 1.3, 24), cx, y + 2.45, cz, 0, 1, sc, stoneP);
+  addGeo(pb, lathe([[0.001, 0.13], [0.92, 0.13], [1.12, 0.3], [1.12, 0.36], [1.0, 0.36], [0.93, 0.23], [0.001, 0.23]], 40), cx, y + 2.95, cz, 0, 1, sc, stoneP);
+  addGeo(pb, new THREE.CylinderGeometry(0.095, 0.095, 0.63, 16), cx, y + 3.565, cz, 0, 1, srgb('#8a9c94'), { aP: [0.3, 0.65, 0] });
   POOLS.push({ x: cx, z: cz, y: y + 0.45, r: 5.2, depth: 0.45 });
   POOLS.push({ x: cx, z: cz, y: y + 1.78, r: 2.1, depth: 0.12 });
   POOLS.push({ x: cx, z: cz, y: y + 3.26, r: 1.0, depth: 0.08 });
   CITYDATA.fountain = { x: cx, z: cz, y };
   wgRect(cx - 6, cz - 6, cx + 6, cz + 6, (k, x, z) => { if (Math.hypot(x - cx, z - cz) < 5.9) WG.B[k] = 1; });
 
-  // clock tower (north side of the square)
+  // A flowing limestone loop marks the north side of the square. All of its
+  // geometry stays within the former tower's blocked footprint.
   const tx = cx, tz = Z.z0 + 3.5;
-  const tc = srgb('#d9c4a0');
-  boxW(st, tx, y + 4, tz, 6.4, 8, 6.4, 0, srgb('#bfae90'));
-  boxW(st, tx, y + 15, tz, 5.6, 14, 5.6, 0, tc);
-  boxW(pb, tx, y + 8.1, tz, 6.7, 0.35, 6.7, 0, srgb('#e6dccb'), stoneP);
-  boxW(pb, tx, y + 22.15, tz, 6.2, 0.3, 6.2, 0, srgb('#e6dccb'), stoneP);
-  // belfry: corner piers + bell
-  for (const [ox, oz] of [[-2.4, -2.4], [2.4, -2.4], [-2.4, 2.4], [2.4, 2.4]]) boxW(st, tx + ox, y + 24.3, tz + oz, 0.8, 4, 0.8, 0, tc);
-  boxW(pb, tx, y + 26.45, tz, 6.0, 0.35, 6.0, 0, srgb('#e6dccb'), stoneP);
-  addGeo(pb, lathe([[0.001, 1.3], [0.35, 1.25], [0.55, 0.9], [0.75, 0.2], [0.9, 0.0]], 16), tx, y + 23.2, tz, 0, 1, srgb('#8a6a2a'), { aP: [0.35, 0.9, 0] });
-  // pyramid copper roof
-  const rb = tb('roofs', tx, tz);
-  const ry0 = y + 26.6, ry1 = y + 32.5, h = 3.1;
-  const pts = [[-h, h], [h, h], [h, -h], [-h, -h]];
-  for (let i = 0; i < 4; i++) {
-    const a = new V3(tx + pts[i][0], ry0, tz + pts[i][1]), b2 = new V3(tx + pts[(i + 1) % 4][0], ry0, tz + pts[(i + 1) % 4][1]);
-    const top = new V3(tx, ry1, tz);
-    const n = new V3().subVectors(b2, a).cross(new V3().subVectors(top, a)).normalize();
-    const [T, B] = faceFrameJS(n);
-    const uv = (P) => [new V3().subVectors(P, a).dot(T), new V3().subVectors(P, a).dot(B)];
-    rb.tri(a, b2, top, n, [uv(a), uv(b2), uv(top)], [1, 1, 1], { aR: [3, 7, 0, 0] });
-  }
-  addGeo(pb, new THREE.CylinderGeometry(0.03, 0.05, 1.6, 6), tx, ry1 + 0.8, tz, 0, 1, srgb('#6d5a2a'), { aP: [0.3, 0.9, 0] });
-  // clock faces (lit at night) + hands (animated)
-  const faceG = new THREE.CircleGeometry(1.35, 32);
-  const handsIdx = [];
-  for (let i = 0; i < 4; i++) {
-    const a = (i * Math.PI) / 2;
-    const nx = Math.sin(a), nz = Math.cos(a);
-    const fx = tx + nx * 2.83, fz = tz + nz * 2.83;
-    addGeo(pb, faceG, fx, y + 18.5, fz, a, 1, srgb('#f3ead2'), { aP: [0.6, 0, 1.2] });
-    addGeo(pb, new THREE.TorusGeometry(1.38, 0.08, 6, 32), fx, y + 18.5, fz, a, 1, srgb('#3a2e1c'), { aP: [0.4, 0.6, 0] });
-    for (let k = 0; k < 12; k++) {
-      const ang = (k / 12) * TAU;
-      const px = Math.cos(ang) * 1.12, py = Math.sin(ang) * 1.12;
-      boxW(pb, fx + nz * px * 1 + nx * 0.02, y + 18.5 + py, fz - nx * px + nz * 0.02, 0.06, 0.18, 0.02, a, srgb('#2a2218'), { aP: [0.5, 0, 0] });
-    }
-    handsIdx.push({ x: fx + nx * 0.06, y: y + 18.5, z: fz + nz * 0.06, a });
-  }
-  const handGeo = new THREE.BoxGeometry(0.07, 1, 0.03).translate(0, 0.5, 0);
-  const handMat = new THREE.MeshStandardMaterial({ color: 0x1b1712, roughness: 0.4, metalness: 0.5 });
-  patch(handMat, { key: 'hand' });
-  const hands = new THREE.InstancedMesh(handGeo, handMat, 8);
-  hands.frustumCulled = false;
-  CITYDATA.clock = { hands, faces: handsIdx };
-  scene.add(hands);
+  const limestone = srgb('#e9e4d7'), bronze = srgb('#a69c7b');
+  addGeo(pb, lathe([[0.001, 0], [3.0, 0], [3.22, 0.12], [3.22, 0.42], [3.05, 0.56], [0.001, 0.56]], 64), tx, y, tz, 0, 1, limestone, stoneP);
+  const loop = new THREE.CatmullRomCurve3([
+    [-0.6, 0.68, 0], [-2.3, 3.5, -0.12], [-2.15, 9.4, -0.28],
+    [-0.25, 15.3, 0], [1.72, 12.15, 0.3], [2.1, 6.2, 0.22], [0.6, 1.8, 0.08],
+  ].map(p => new V3(...p)), true, 'centripetal');
+  addGeo(pb, new THREE.TubeGeometry(loop, 96, 0.29, 12, true), tx, y, tz, 0.22, 1, limestone, { aP: [0.6, 0.05, 0] });
+  addGeo(pb, new THREE.TorusGeometry(2.82, 0.055, 8, 64), tx, y + 8.9, tz, 0, 1, bronze, { aP: [0.3, 0.65, 0] }, Math.PI / 2);
+  addGeo(pb, new THREE.TorusGeometry(3.1, 0.022, 6, 64), tx, y + 0.46, tz, 0, 1, srgb('#fff1d5'), { aP: [0.4, 0, 2.2] }, Math.PI / 2);
+  CITYDATA.lightSculpture = { x: tx, z: tz, y, height: 15.6 };
   wgSet(tx - 3.5, tz - 3.5, tx + 3.5, tz + 3.5, null, 1);
 
   // cafe tables with parasols (south-east of fountain)
   const fb = tb('fabric', cx, cz);
-  const cafeCols = [[srgb('#efe6d2'), srgb('#2f5d4a')], [srgb('#efe6d2'), srgb('#9c3a2e')]];
+  const cafeCols = ['#e7e0ce', '#a8b5a2'].map(hex => [srgb(hex), srgb(hex)]);
   let ci = 0;
   for (const [ox, oz] of [[12, 10], [16, 4], [8, 16], [15, 15], [-12, 13], [-16, 7]]) {
     const px = cx + ox, pz = cz + oz;
@@ -4077,25 +4295,19 @@ function buildPark() {
     const x = pd.x + Math.cos(a) * (loopR + 2.2), z = pd.z + Math.sin(a) * (loopR + 2.2);
     addBench(x, z, -a + Math.PI / 2 + Math.PI, heightAt(x, z));
   }
-  // gazebo on a small rise south-east
+  // An open oval timber pavilion on the same accessible park deck.
   const gx = P.x1 - 17, gz = P.z1 - 17, gy = heightAt(gx, gz);
-  const pb = tb('props', gx, gz), wd = tb('wood', gx, gz), rb = tb('roofs', gx, gz);
-  addGeo(wd, new THREE.CylinderGeometry(4.2, 4.3, 0.4, 8), gx, gy + 0.2, gz, Math.PI / 8, 1, srgb('#a58563'));
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * TAU + Math.PI / 8;
-    addGeo(pb, new THREE.CylinderGeometry(0.12, 0.14, 2.7, 8), gx + Math.cos(a) * 3.8, gy + 1.75, gz + Math.sin(a) * 3.8, 0, 1, srgb('#efe9dd'), { aP: [0.6, 0, 0] });
+  const pb = tb('props', gx, gz), wd = tb('wood', gx, gz);
+  addGeo(wd, new THREE.CylinderGeometry(4.2, 4.3, 0.4, 48), gx, gy + 0.2, gz, 0, 1, srgb('#c7b28f'));
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2 + Math.PI / 4;
+    addGeo(pb, new THREE.CylinderGeometry(0.1, 0.12, 2.77, 12), gx + Math.cos(a) * 3.65, gy + 1.785, gz + Math.sin(a) * 3.2, 0, 1, srgb('#c3ac86'), { aP: [0.65, 0, 0] });
   }
-  const ry0 = gy + 3.1, ry1 = gy + 5.3;
-  for (let i = 0; i < 8; i++) {
-    const a0 = (i / 8) * TAU + Math.PI / 8, a1 = ((i + 1) / 8) * TAU + Math.PI / 8;
-    const a = new V3(gx + Math.cos(a0) * 4.7, ry0, gz + Math.sin(a0) * 4.7), b2 = new V3(gx + Math.cos(a1) * 4.7, ry0, gz + Math.sin(a1) * 4.7);
-    const top = new V3(gx, ry1, gz);
-    const n = new V3().subVectors(top, a).cross(new V3().subVectors(b2, a)).normalize();
-    const [T, B] = faceFrameJS(n);
-    const uv = (Pp) => [new V3().subVectors(Pp, a).dot(T), new V3().subVectors(Pp, a).dot(B)];
-    rb.tri(a, top, b2, n, [uv(a), uv(top), uv(b2)], [1, 1, 1], { aR: [3, 3, 0, 0] });
+  addGeo(pb, new THREE.CylinderGeometry(4.75, 4.75, 0.17, 64), gx, gy + 3.255, gz, 0, new V3(1, 1, 0.88), srgb('#e6e5dc'), { aP: [0.56, 0.12, 0] });
+  for (let z = -3.6; z <= 3.6; z += 0.4) {
+    const span = 9.2 * Math.sqrt(Math.max(0, 1 - (z / 4.05) ** 2));
+    boxW(wd, gx, gy + 3.105, gz + z, span, 0.14, 0.22, 0, srgb('#cbb794'));
   }
-  addGeo(pb, new THREE.CylinderGeometry(4.75, 4.75, 0.25, 8), gx, ry0 - 0.1, gz, Math.PI / 8, 1, srgb('#efe9dd'), { aP: [0.6, 0, 0] });
   wgRect(gx - 5, gz - 5, gx + 5, gz + 5, (k, x, z) => { const r = Math.hypot(x - gx, z - gz); if (r < 4.3) WG.H[k] = gy + 0.4; });
   CITYDATA.gazebo = { x: gx, z: gz };
 }
@@ -4784,6 +4996,59 @@ function placeTrees() {
 
 // --- grass + flowers (camera-following instanced fields) -------------------------------
 const FIELDS = [];
+const FIELD_MASK_BLOCK = 32;
+let fieldMaskOccupancy = null, fieldMaskTexture = null, fieldMaskVersion = -1;
+let fieldVisibilityCellX = null, fieldVisibilityCellZ = null;
+
+function buildFieldMaskOccupancy(mask, n = MASK_N, world = WORLD) {
+  const cells = Math.ceil(n / FIELD_MASK_BLOCK), occupied = new Uint8Array(cells * cells);
+  for (let z = 0; z < n; z++) for (let x = 0; x < n; x++) {
+    const pixel = (z * n + x) * 4;
+    const bits = (mask[pixel] > 0 ? 1 : 0) | (mask[pixel + 1] > 0 ? 2 : 0);
+    if (bits) occupied[Math.floor(z / FIELD_MASK_BLOCK) * cells + Math.floor(x / FIELD_MASK_BLOCK)] |= bits;
+  }
+  return { occupied, cells, pixelWorld: world / n, cellWorld: world / n * FIELD_MASK_BLOCK, world };
+}
+
+function fieldMaskHasVegetation(mask, minX, maxX, minZ, maxZ, channel) {
+  // Clamp indices like the GPU mask sampler: points outside the world still
+  // inherit its boundary texels. Any occupied texel retains the entire field.
+  const index = v => clamp(Math.floor((v + mask.world / 2) / mask.cellWorld), 0, mask.cells - 1);
+  const x0 = index(minX), x1 = index(maxX), z0 = index(minZ), z1 = index(maxZ);
+  for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) {
+    if (mask.occupied[z * mask.cells + x] & channel) return true;
+  }
+  return false;
+}
+
+function updateFieldVisibility(force = false) {
+  const texture = G.uMask.value;
+  // buildNature precedes finishMask; wait for the final city/park mask upload.
+  if (!texture || !texture.image || texture.image.data !== MASK) {
+    for (const f of FIELDS) f.visible = true;
+    fieldVisibilityCellX = fieldVisibilityCellZ = null;
+    return;
+  }
+  if (texture !== fieldMaskTexture || texture.version !== fieldMaskVersion) {
+    fieldMaskOccupancy = buildFieldMaskOccupancy(MASK);
+    fieldMaskTexture = texture; fieldMaskVersion = texture.version;
+    force = true;
+  }
+  const mask = fieldMaskOccupancy, step = mask.pixelWorld * 8;
+  const cx = Math.floor((camera.position.x + WORLD / 2) / step);
+  const cz = Math.floor((camera.position.z + WORLD / 2) / step);
+  if (!force && cx === fieldVisibilityCellX && cz === fieldVisibilityCellZ) return;
+  fieldVisibilityCellX = cx; fieldVisibilityCellZ = cz;
+  const minX = cx * step - WORLD / 2, minZ = cz * step - WORLD / 2;
+  for (const f of FIELDS) {
+    // Cover every possible camera position in this cached cell, plus the whole
+    // fade footprint, maximum blade movement and linear-filter texel support.
+    const radius = f.userData.u.uFadeF.value + 4 + mask.pixelWorld;
+    f.visible = fieldMaskHasVegetation(mask, minX - radius, minX + step + radius,
+      minZ - radius, minZ + step + radius, f.userData.maskChannel);
+  }
+}
+
 function bladeClump(nBlades, seg, width) {
   const pos = [], nrm = [], idx = [], uv = [];
   const rng = mulberry32(5);
@@ -4916,7 +5181,7 @@ function makeField({ geo, count, tile, fadeN, fadeF, hScale, key, flowers = fals
   mesh.receiveShadow = true;
   mesh.castShadow = false;
   mesh.layers.set(LAYER_NOREFLECT);
-  mesh.userData = { u, full: count };
+  mesh.userData = { u, full: count, maskChannel: flowers ? 2 : 1 };
   scene.add(mesh);
   FIELDS.push(mesh);
   return mesh;
@@ -4963,6 +5228,7 @@ let lodTimer = 0;
 function updateFields(dt = 0.016) {
   for (const f of FIELDS) f.userData.u.uCamF.value.copy(camera.position);
   lodTimer -= dt;
+  updateFieldVisibility(lodTimer <= 0);
   if (lodTimer > 0) return;
   lodTimer = 0.3;
   const c = camera.position;
@@ -5544,10 +5810,10 @@ function updateBoats(t) {
 // --- trams ----------------------------------------------------------------------------------
 function tramGeometry() {
   const b = new GeoBuilder({ aP: 3 }, { aP: [0.5, 0, 0] });
-  const red = srgb('#b33a2b'), cream = srgb('#efe4c8'), dark = srgb('#2a2d2e');
-  boxW(b, 0, 0.75, 0, 11, 1.1, 2.4, 0, red);
+  const sage = srgb('#70877b'), cream = srgb('#f1f0e7'), dark = srgb('#2a2d2e');
+  boxW(b, 0, 0.75, 0, 11, 1.1, 2.4, 0, sage);
   boxW(b, 0, 2.05, 0, 11, 1.5, 2.4, 0, cream);
-  boxW(b, 0, 3.0, 0, 11.2, 0.4, 2.5, 0, red);
+  boxW(b, 0, 3.0, 0, 11.2, 0.4, 2.5, 0, sage);
   boxW(b, 0, 3.35, 0, 10.4, 0.3, 2.1, 0, srgb('#6a6d6e'));
   for (let k = -4; k <= 4; k++) {
     for (const sz of [1.21, -1.21]) boxW(b, k * 1.15, 2.1, sz, 0.95, 1.05, 0.03, 0, srgb('#1e2a30'), { aP: [0.08, 0.3, 3.5] });
@@ -5998,7 +6264,8 @@ function windLabel() {
   return `${WIND_NAMES[i]}풍 ${ms.toFixed(1)} m/s`;
 }
 function fmtTime(h) {
-  const hh = Math.floor(h) % 24, mm = Math.floor((h % 1) * 60);
+  const minutes = Math.round(h * 60) % 1440;
+  const hh = Math.floor(minutes / 60), mm = minutes % 60;
   return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
 }
 
@@ -6026,6 +6293,7 @@ function initUI() {
     b.innerHTML = `<span class="k">${v.key}</span>${v.name}`;
     b.title = `${v.name}(으)로 이동 (${v.key})`;
     b.dataset.view = i;
+    b.setAttribute('aria-pressed', String(i === 0));
     b.addEventListener('click', () => goToView(i));
     vc.appendChild(b);
   });
@@ -6394,14 +6662,15 @@ function registerInterior(o) {
       const k = x + ':' + z; if (!INTERIORS.cells.has(k)) INTERIORS.cells.set(k, []); INTERIORS.cells.get(k).push(r);
     }
   }
-  const wall = r.color.map(v => Math.min(1, v * 0.52 + 0.4));
-  const stone = srgb('#d6cbb5'), trim = srgb(type.color), metal = srgb('#29322f');
+  const wall = r.modern ? srgb('#f5f3eb') : r.color.map(v => Math.min(1, v * 0.52 + 0.4));
+  const stone = srgb(r.modern ? '#e8e3d7' : '#d6cbb5');
+  const trim = srgb(r.modern ? (r.modernStyle % 2 ? '#65706a' : '#766c58') : type.color), metal = srgb('#29322f');
   const B = (kind, x, y, z, w, h, d, col, rot = 0) => interiorBox(r, kind, x, y, z, w, h, d, col, rot);
   const hw = r.w / 2, hd = r.d / 2, t = 0.28, ceiling = 3.52;
   // The slab closes the upper storeys; all ground-floor walls have actual depth.
-  B('roomWood', 0, 0.025, 0, r.w, 0.05, r.d, srgb('#b9a48b'));
+  B('roomWood', 0, 0.025, 0, r.w, 0.05, r.d, srgb(r.modern ? '#f0e7d6' : '#b9a48b'));
   if (r.plinth > 0) B('roomStone', 0, -r.plinth / 2, 0, r.w, r.plinth, r.d, stone);
-  B('roomPlaster', 0, ceiling + 0.12, 0, r.w, 0.24, r.d, srgb('#eae4d6'));
+  B('roomPlaster', 0, ceiling + 0.12, 0, r.w, 0.24, r.d, srgb(r.modern ? '#faf8f2' : '#eae4d6'));
   B('roomPlaster', -hw + t / 2, 2.1, 0, t, 4.2, r.d, wall);
   B('roomPlaster', hw - t / 2, 2.1, 0, t, 4.2, r.d, wall);
   B('roomPlaster', 0, 2.1, -hd + t / 2, r.w, 4.2, t, wall);
@@ -6409,6 +6678,24 @@ function registerInterior(o) {
   // Wide glazed storefronts flank an opening; no painted door or invisible wall.
   const sideW = (r.w - r.dw) / 2, winW = sideW - 0.66;
   const doorH = 2.66;
+  if (r.modern) {
+    // Full-height shopfront, a clear central entrance and a thin floating slab.
+    // The glass uses exactly the same collision footprint as the old storefront.
+    const glassTop = 3.24, frame = 0.045;
+    B('roomPlaster', 0, (glassTop + 4.2) / 2, hd - t / 2, r.w, 4.2 - glassTop, t, wall);
+    for (const side of [-1, 1]) {
+      const cx = side * (r.dw / 2 + sideW / 2), gw = sideW - 0.12;
+      B('roomGlass', cx, 1.67, hd - 0.115, gw, 3.12, 0.018, srgb('#edf3ee'));
+      for (const yy of [0.095, glassTop]) B('roomMetal', cx, yy, hd - 0.08, sideW, frame, 0.07, trim);
+      for (const xx of [side * (hw - 0.045), side * (r.dw / 2 + 0.03)]) B('roomMetal', xx, 1.67, hd - 0.08, frame, 3.16, 0.075, trim);
+      if (gw > 2.8) B('roomMetal', cx + side * gw * 0.17, 1.67, hd - 0.08, 0.035, 3.16, 0.065, trim);
+      interiorSolid(r, cx, hd - t / 2, sideW, t);
+    }
+    B('roomGlass', 0, (doorH + glassTop) / 2, hd - 0.12, r.dw, glassTop - doorH, 0.018, srgb('#edf3ee'));
+    const canopyW = r.modernStyle % 3 === 0 ? r.w - 0.35 : Math.min(r.w - 0.35, 4.8);
+    B('roomTrim', 0, 3.43, hd + 0.45, canopyW, 0.10, 1.03, stone);
+    B('roomWood', 0, 3.375, hd + 0.44, canopyW - 0.09, 0.018, 0.93, srgb('#e4d6bc'));
+  } else {
   B('roomStone', 0, (doorH + 4.2) / 2, hd - t / 2, r.w, 4.2 - doorH, t, stone);
   B('roomTrim', 0, 3.7, hd + 0.09, r.w + 0.12, 0.17, 0.38, trim);
   for (const side of [-1, 1]) {
@@ -6422,11 +6709,16 @@ function registerInterior(o) {
     B('roomStone', cx, 0.56, hd + 0.12, winW + 0.24, 0.1, 0.5, stone);
     interiorSolid(r, cx, hd - t / 2, sideW, t);
   }
+  }
   for (const x of [-r.dw / 2 - 0.035, r.dw / 2 + 0.035]) B('roomTrim', x, doorH / 2, hd - 0.06, 0.08, doorH, 0.23, trim);
   B('roomTrim', 0, doorH + 0.025, hd - 0.06, r.dw + 0.16, 0.09, 0.23, trim);
   B('roomStone', 0, 0.025, hd + 0.18, r.dw + 0.12, 0.05, 0.72, stone);
   buildInteriorAccess(r);
-  // Skirting, overhead joists and three-dimensional cornice make the room legible.
+  if (r.modern) {
+    // A low oak skirting and uninterrupted ceiling keep the contemporary rooms airy.
+    for (const x of [-hw + 0.17, hw - 0.17]) B('roomWood', x, 0.105, 0, 0.04, 0.10, r.d - 0.5, srgb('#e7dac3'));
+  } else {
+  // Historic landmarks retain their original joinery and upper-storey details.
   for (const x of [-hw + 0.17, hw - 0.17]) {
     B('roomTrim', x, 0.16, 0, 0.09, 0.21, r.d - 0.5, trim);
     B('roomTrim', x, ceiling - 0.14, 0, 0.12, 0.16, r.d - 0.5, srgb('#d4c7ad'));
@@ -6480,6 +6772,7 @@ function registerInterior(o) {
     addGeo(pb, canopy, p.x, p.y, p.z, r.rot, new THREE.Vector3(1, 1, 0.6), trim);
     canopy.dispose();
   }
+  }
   // Downpipes at one side, brass street number plaque and an entry light.
   B('roomMetal', -hw + 0.17, 2.05, hd + 0.2, 0.065, 4.1, 0.065, metal);
   B('roomMetal', r.dw / 2 + 0.27, 1.55, hd + 0.025, 0.16, 0.22, 0.035, srgb('#a89055'));
@@ -6494,7 +6787,8 @@ function registerInterior(o) {
 function interiorRecipe(r, render) {
   const bins = new Map(), random = mulberry32(Math.floor(r.seed * 65497) + 318);
   const hw = r.w / 2, hd = r.d / 2;
-  const wood = srgb('#b29271'), dark = srgb('#493c31'), brass = srgb('#9d895c'), linen = srgb('#c4b7a0');
+  const wood = srgb(r.modern ? '#e9dcc5' : '#b29271'), dark = srgb(r.modern ? '#45534d' : '#493c31');
+  const brass = srgb(r.modern ? '#b3a58c' : '#9d895c'), linen = srgb(r.modern ? '#e9e5dc' : '#c4b7a0');
   const materials = { wood: 'roomWood', plaster: 'roomPlaster', metal: 'roomMetal', fabric: 'roomFabric', glow: 'roomGlow', glass: 'roomGlass', trim: 'roomTrim', shadow: 'roomShadow' };
   const bin = kind => { if (!bins.has(kind)) bins.set(kind, new GeoBuilder()); return bins.get(kind); };
   const box = (kind, x, y, z, w, h, d, col = intWhite, rot = 0, solid = false) => {
@@ -6514,7 +6808,7 @@ function interiorRecipe(r, render) {
   const cyl = (kind, x, y, z, rt, rb, h, col) => { if (render) shape(kind, new THREE.CylinderGeometry(rt, rb, h, 16), x, y, z, 1, col); };
   const pot = (x, z, size = 1) => {
     contact(x, z, size * 0.95, size * 0.95);
-    cyl('plaster', x, 0.26 * size, z, 0.23 * size, 0.16 * size, 0.48 * size, srgb('#a8795a'));
+    cyl('plaster', x, 0.26 * size, z, 0.23 * size, 0.16 * size, 0.48 * size, srgb(r.modern ? '#dfdfd2' : '#a8795a'));
     cyl('wood', x, 0.69 * size, z, 0.016 * size, 0.028 * size, 0.68 * size, dark);
     for (let i = 0; i < 14; i++) { const a = i * 2.4; shape('fabric', new THREE.SphereGeometry(1, 8, 6), x + Math.cos(a) * 0.2 * size, (0.56 + i * 0.042) * size, z + Math.sin(a) * 0.2 * size, new THREE.Vector3(0.2, 0.075, 0.12).multiplyScalar(size), srgb(i % 2 ? '#426743' : '#759062')); }
     if (!render) interiorSolid(r, x, z, size * 0.46, size * 0.46);
@@ -6525,14 +6819,16 @@ function interiorRecipe(r, render) {
     if (!render) interiorSolid(r, x, z, 0.49, 0.5, rot);
     contact(x, z, 0.9, 0.9);
     let p = T(0, -0.24);
-    rounded('wood', p[0], 0.81, p[1], 0.53, 0.25, 0.07, 0.028, wood, rot);
+    rounded(r.modern ? 'fabric' : 'wood', p[0], 0.79, p[1], 0.53, r.modern ? 0.39 : 0.25, r.modern ? 0.09 : 0.07, r.modern ? 0.045 : 0.028, r.modern ? srgb(cushion) : wood, rot);
     for (const a of [-0.2, 0.2]) { p = T(a, -0.19); cyl('wood', p[0], 0.62, p[1], 0.021, 0.023, 0.63, wood); }
     for (const a of [-0.18, 0.18]) for (const b of [-0.17, 0.17]) { p = T(a, b); cyl('wood', p[0], 0.26, p[1], 0.024, 0.016, 0.46, dark); }
     if (!render) r.seats.push({ pos: interiorWorld(r, x, 1.18, z), yaw: r.rot + rot + Math.PI });
   };
   const table = (x, z) => {
     contact(x, z, 1.85, 1.85);
-    cyl('wood', x, 0.76, z, 0.63, 0.63, 0.07, wood); cyl('metal', x, 0.38, z, 0.05, 0.075, 0.72, dark); cyl('metal', x, 0.085, z, 0.34, 0.36, 0.07, dark);
+    cyl(r.modern ? 'plaster' : 'wood', x, 0.76, z, 0.63, 0.63, 0.07, r.modern ? srgb('#e9e4d9') : wood);
+    cyl('metal', x, 0.38, z, r.modern ? 0.075 : 0.05, r.modern ? 0.11 : 0.075, 0.72, r.modern ? brass : dark);
+    cyl('metal', x, 0.085, z, 0.34, 0.36, 0.045, r.modern ? brass : dark);
     if (!render) interiorSolid(r, x, z, 1.13, 1.13);
     cyl('plaster', x - 0.18, 0.802, z, 0.11, 0.095, 0.017, srgb('#e8e3d7'));
     cyl('plaster', x - 0.18, 0.86, z, 0.066, 0.05, 0.105, srgb('#e8e3d7')); cyl('metal', x - 0.18, 0.915, z, 0.053, 0.053, 0.008, srgb('#463329'));
@@ -6544,12 +6840,14 @@ function interiorRecipe(r, render) {
   };
   const shelf = (x, z, wide, rot = 0, books = true) => {
     contact(x, z, wide + 0.5, 0.9);
-    box('wood', x, 1.25, z, wide, 2.5, 0.12, dark, rot);
+    if (!r.modern) box('wood', x, 1.25, z, wide, 2.5, 0.12, dark, rot);
     const T = (a, b) => [x + a * Math.cos(rot) + b * Math.sin(rot), z - a * Math.sin(rot) + b * Math.cos(rot)];
+    if (r.modern) for (const a of [-wide / 2 + 0.025, 0, wide / 2 - 0.025]) { const p = T(a, 0.1); box('metal', p[0], 1.25, p[1], 0.035, 2.5, 0.30, brass, rot); }
     for (let row = 0; row < 5; row++) {
       const yy = 0.18 + row * 0.48, p = T(0, 0.13);
       box('wood', p[0], yy, p[1], wide, 0.045, 0.4, wood, rot);
       for (let j = 0; j < Math.floor(wide / 0.16); j++) {
+        if (r.modern && j % 9 > 5) continue;
         const h = 0.24 + random() * 0.15, p2 = T(-wide / 2 + 0.1 + j * 0.16, 0.13);
         if (books) box('fabric', p2[0], yy + h / 2 + 0.024, p2[1], 0.11 + random() * 0.025, h, 0.22, srgb(['#536760', '#a56c54', '#c0b78c', '#60747c', '#786057'][Math.floor(random() * 5)]), rot);
         else if (j % 3 === 0) cyl('plaster', p2[0], yy + 0.1, p2[1], 0.07, 0.1, 0.16, linen);
@@ -6558,6 +6856,17 @@ function interiorRecipe(r, render) {
     if (!render) { const p = T(0, 0.13); interiorSolid(r, p[0], p[1], wide, 0.42, rot); }
   };
   const art = (x, y, z, w, h, rot = 0) => {
+    if (r.modern) {
+      const normal = [Math.sin(rot), Math.cos(rot)], tangent = [Math.cos(rot), -Math.sin(rot)];
+      box('wood', x, y, z, w + 0.035, h + 0.035, 0.045, wood, rot);
+      box('plaster', x + normal[0] * 0.029, y, z + normal[1] * 0.029, w, h, 0.02, srgb('#f1eee4'), rot);
+      box('fabric', x - tangent[0] * w * 0.18 + normal[0] * 0.043, y - h * 0.12, z - tangent[1] * w * 0.18 + normal[1] * 0.043, w * 0.27, h * 0.52, 0.014, srgb('#96aa99'), rot);
+      if (render) {
+        const disc = new THREE.CircleGeometry(Math.min(w, h) * 0.24, 40);
+        addGeo(bin('fabric'), disc, x + tangent[0] * w * 0.18 + normal[0] * 0.055, y + h * 0.12, z + tangent[1] * w * 0.18 + normal[1] * 0.055, rot, 1, srgb('#cfbca4')); disc.dispose();
+      }
+      return;
+    }
     box('wood', x, y, z, w + 0.09, h + 0.09, 0.07, dark, rot);
     const normal = [Math.sin(rot), Math.cos(rot)];
     box('plaster', x + normal[0] * 0.042, y, z + normal[1] * 0.042, w, h, 0.02, srgb('#c3cbbd'), rot);
@@ -6565,19 +6874,28 @@ function interiorRecipe(r, render) {
   };
   if (r.type.kind === 'cafe') {
     const back = -hd + 2.25, counterW = Math.min(4.8, r.w - 2.7), counterX = -0.35;
-    rounded('wood', counterX, 0.53, back, counterW, 1.01, 0.84, 0.045, wood);
+    rounded(r.modern ? 'plaster' : 'wood', counterX, 0.53, back, counterW, 1.01, 0.84, r.modern ? 0.16 : 0.045, r.modern ? srgb('#e3e5d9') : wood);
     if (!render) interiorSolid(r, counterX, back, counterW, 0.84);
     contact(counterX, back, counterW + 0.7, 1.45);
     rounded('plaster', counterX, 1.075, back, counterW + 0.14, 0.1, 0.98, 0.035, srgb('#d9d0bc'));
-    // Fluted cabinet front and recessed dark toe kick.
+    if (!r.modern) {
+    // Fluted cabinet front and recessed dark toe kick in the historic cafes.
     for (let x = counterX - counterW / 2 + 0.12; x < counterX + counterW / 2; x += 0.13) rounded('wood', x, 0.57, back + 0.433, 0.038, 0.76, 0.038, 0.014, wood);
     box('trim', counterX, 0.09, back + 0.435, counterW - 0.16, 0.12, 0.03, srgb('#453a30'));
     box('metal', counterX, 0.38, back + 0.63, counterW - 0.4, 0.035, 0.035, brass);
     for (const x of [-counterW / 2 + 0.45, counterW / 2 - 0.6]) box('metal', x, 0.3, back + 0.53, 0.035, 0.2, 0.23, brass);
+    } else {
+      rounded('wood', counterX - counterW * 0.28, 0.56, back + 0.43, counterW * 0.34, 0.77, 0.022, 0.01, wood);
+      box('trim', counterX, 0.087, back + 0.39, counterW - 0.30, 0.055, 0.025, dark);
+    }
     // A tiled prep alcove with a human-sized worktop; individual grout joints.
     box('plaster', 0, 1.71, -hd + 0.305, Math.min(r.w - 0.7, 6.3), 2.08, 0.05, srgb('#b5b4a0'));
     const tileW = Math.min(r.w - 0.8, 6.15);
-    for (let row = 0; row < 8; row++) for (let xx = -tileW / 2 + 0.16; xx < tileW / 2 - 0.1; xx += 0.32) {
+    if (r.modern) {
+      box('plaster', 0, 1.79, -hd + 0.345, tileW, 1.94, 0.035, srgb('#d4ddd2'));
+      // Tall ceramic tiles make a calm, continuous prep wall.
+      for (let xx = -tileW / 2 + 0.15; xx < tileW / 2 - 0.1; xx += 0.30) box('plaster', xx, 1.79, -hd + 0.369, 0.286, 1.92, 0.016, srgb('#dce3d7'));
+    } else for (let row = 0; row < 8; row++) for (let xx = -tileW / 2 + 0.16; xx < tileW / 2 - 0.1; xx += 0.32) {
       box('plaster', xx, 0.82 + row * 0.23, -hd + 0.345, 0.307, 0.217, 0.025, srgb(['#81958a', '#8d9f91', '#9aab9c'][Math.floor(random() * 3)]));
     }
     box('wood', 0, 0.49, -hd + 0.76, tileW, 0.86, 0.65, dark, 0, true);
@@ -6611,14 +6929,14 @@ function interiorRecipe(r, render) {
       rounded('fabric', x, 1.26, z, 0.19, 0.11, 0.11, 0.04, srgb('#b97d3e'), 0.25);
     }
     // Open shelves stop below the menu, preserving a believable prep zone.
-    for (const y of [1.68, 2.12]) {
+    for (const y of (r.modern ? [1.88] : [1.68, 2.12])) {
       box('wood', 0, y, -hd + 0.58, tileW - 0.35, 0.055, 0.4, wood);
-      for (let x = -tileW / 2 + 0.38; x < -1.1; x += 0.31) {
+      for (let x = -tileW / 2 + 0.38; x < -1.1; x += r.modern ? 0.5 : 0.31) {
         cyl('glass', x, y + 0.2, -hd + 0.54, 0.11, 0.11, 0.32, srgb('#c3c6a9'));
         cyl('wood', x, y + 0.16, -hd + 0.54, 0.095, 0.095, 0.21, srgb('#8d7553'));
         cyl('metal', x, y + 0.37, -hd + 0.54, 0.112, 0.112, 0.032, brass);
       }
-      for (let x = 1.1; x < tileW / 2 - 0.3; x += 0.23) cyl('plaster', x, y + 0.11, -hd + 0.58, 0.071, 0.06, 0.18, srgb('#dfd2b8'));
+      for (let x = 1.1; x < tileW / 2 - 0.3; x += r.modern ? 0.38 : 0.23) cyl('plaster', x, y + 0.11, -hd + 0.58, 0.071, 0.06, 0.18, srgb('#dfd2b8'));
     }
     table(-hw + 2.0, hd - 2.3); if (r.w > 8.5) table(hw - 2.0, hd - 2.3);
     table(-hw + 2.0, -0.4); if (r.w > 9.5) table(hw - 2.0, -0.4);
@@ -6626,7 +6944,7 @@ function interiorRecipe(r, render) {
     art(hw - 0.32, 1.95, -0.5, 1.8, 1.1, -Math.PI / 2);
     art(-hw + 0.32, 1.93, -0.7, 1.35, 1.0, Math.PI / 2);
     // Slim wall panelling prevents the lower room becoming an empty plaster box.
-    for (const x of [-hw + 0.3, hw - 0.3]) {
+    if (!r.modern) for (const x of [-hw + 0.3, hw - 0.3]) {
       box('wood', x, 0.54, 0.1, 0.04, 0.92, r.d - 2.4, srgb('#a3aa96'));
       box('wood', x, 1.015, 0.1, 0.08, 0.065, r.d - 2.4, wood);
     }
@@ -6642,7 +6960,8 @@ function interiorRecipe(r, render) {
     for (const x of [-r.w * 0.28, r.w * 0.28]) { art(x, 1.85, -hd + 0.32, 1.7, 1.3); art(-hw + 0.32, 1.85, x, 1.65, 1.15, Math.PI / 2); }
     box('plaster', hw - 1.7, 0.53, -0.8, 0.86, 1, 0.86, srgb('#e4ded0'), 0, true);
     shape('metal', new THREE.TorusKnotGeometry(0.31, 0.09, 64, 9), hw - 1.7, 1.42, -0.8, 1, brass);
-    box('wood', -0.4, 0.43, 0, 1.9, 0.12, 0.65, wood, 0, true);
+    if (r.modern) { rounded('fabric', -0.4, 0.45, 0, 1.9, 0.16, 0.65, 0.075, linen); if (!render) interiorSolid(r, -0.4, 0, 1.9, 0.65); }
+    else box('wood', -0.4, 0.43, 0, 1.9, 0.12, 0.65, wood, 0, true);
     for (const x of [-1.14, 0.34]) box('metal', x, 0.23, 0, 0.075, 0.42, 0.6, dark);
     if (!render) r.seats.push({ pos: interiorWorld(r, -0.4, 1.12, 0), yaw: r.rot });
     pot(hw - 0.8, hd - 0.8, 1.6);
@@ -6656,8 +6975,15 @@ function interiorRecipe(r, render) {
     box('fabric', -hw + 1.55, 0.61, -hd + 1.7, 1.96, 0.3, 2.43, srgb('#d3c6ad'));
     box('fabric', -hw + 1.55, 0.81, -hd + 0.85, 1.65, 0.13, 0.49, srgb('#e8e0d0'));
     box('fabric', -hw + 1.55, 0.79, -hd + 2.2, 1.98, 0.06, 1.13, srgb('#77958b'));
-    box('fabric', -hw + 0.93, 0.56, 0.5, 1.2, 0.93, 2.6, srgb('#b29a7c'), 0, true);
-    box('fabric', -hw + 1.36, 0.66, 0.5, 0.36, 0.35, 2.32, srgb('#d1bfa0'));
+    if (r.modern) {
+      rounded('fabric', -hw + 0.93, 0.52, 0.5, 1.2, 0.82, 2.6, 0.17, linen);
+      rounded('fabric', -hw + 1.24, 0.62, 0.5, 0.58, 0.21, 2.27, 0.08, srgb('#e1e5d8'));
+      for (const z of [-0.22, 0.72]) rounded('fabric', -hw + 0.73, 0.88, z, 0.26, 0.44, 0.62, 0.10, srgb('#b0bda9'));
+      if (!render) interiorSolid(r, -hw + 0.93, 0.5, 1.2, 2.6);
+    } else {
+      box('fabric', -hw + 0.93, 0.56, 0.5, 1.2, 0.93, 2.6, srgb('#b29a7c'), 0, true);
+      box('fabric', -hw + 1.36, 0.66, 0.5, 0.36, 0.35, 2.32, srgb('#d1bfa0'));
+    }
     if (!render) r.seats.push({ pos: interiorWorld(r, -hw + 1.25, 1.25, 0.5), yaw: r.rot - Math.PI / 2 });
     box('wood', -hw + 2.4, 0.35, 0.5, 0.66, 0.6, 1.24, wood, 0, true);
     table(hw - 2.1, hd - 2.2); art(-hw + 0.32, 2.0, 0.5, 1.5, 1, Math.PI / 2);
@@ -6665,9 +6991,15 @@ function interiorRecipe(r, render) {
   }
   // Pendants and their diffusers are geometry, not flat light spots.
   for (const z of [-hd * 0.42, hd * 0.4]) {
-    cyl('metal', 0, 3.17, z, 0.013, 0.013, 0.68, dark);
-    cyl('metal', 0, 2.8, z, 0.11, 0.32, 0.24, brass);
-    cyl('glow', 0, 2.675, z, 0.28, 0.28, 0.015, srgb('#ffe2a5'));
+    if (r.modern) {
+      cyl('metal', 0, 3.19, z, 0.008, 0.008, 0.61, brass);
+      cyl('metal', 0, 2.94, z, 0.055, 0.055, 0.10, brass);
+      shape('glow', new THREE.SphereGeometry(0.26, 20, 12), 0, 2.72, z, new THREE.Vector3(1.18, 0.72, 1.18), srgb('#fff6df'));
+    } else {
+      cyl('metal', 0, 3.17, z, 0.013, 0.013, 0.68, dark);
+      cyl('metal', 0, 2.8, z, 0.11, 0.32, 0.24, brass);
+      cyl('glow', 0, 2.675, z, 0.28, 0.28, 0.015, srgb('#ffe2a5'));
+    }
   }
   box('plaster', r.dw / 2 + 0.37, 1.27, hd - 0.305, 0.1, 0.16, 0.03, srgb('#d6d3c9'));
   if (!render) return;
@@ -6679,26 +7011,32 @@ function interiorRecipe(r, render) {
   }
   // Door leaf swings inward from a real hinge. Only these nearby meshes animate.
   const pivot = new THREE.Group(); pivot.position.set(-r.dw / 2, 0.06, hd - 0.15); group.add(pivot);
-  const db = new GeoBuilder(), dg = new GeoBuilder(), dm = new GeoBuilder(), frameCol = srgb(r.type.color);
-  for (const x of [0.07, r.dw - 0.07]) boxW(db, x, 1.28, 0, 0.14, 2.56, 0.075, 0, frameCol);
-  for (const [y, h] of [[0.17, 0.34], [2.5, 0.13], [0.83, 0.075]]) boxW(db, r.dw / 2, y, 0, r.dw, h, 0.075, 0, frameCol);
-  boxW(dg, r.dw / 2, 1.65, 0, r.dw - 0.25, 1.55, 0.012, 0, srgb('#bdd5d4'));
+  const db = new GeoBuilder(), dg = new GeoBuilder(), dm = new GeoBuilder(), frameCol = srgb(r.modern ? '#756e5e' : r.type.color);
+  if (r.modern) {
+    for (const x of [0.024, r.dw - 0.024]) boxW(db, x, 1.28, 0, 0.048, 2.56, 0.075, 0, frameCol);
+    for (const y of [0.03, 2.53]) boxW(db, r.dw / 2, y, 0, r.dw, 0.06, 0.075, 0, frameCol);
+    boxW(dg, r.dw / 2, 1.28, 0, r.dw - 0.10, 2.44, 0.012, 0, srgb('#e3eee7'));
+  } else {
+    for (const x of [0.07, r.dw - 0.07]) boxW(db, x, 1.28, 0, 0.14, 2.56, 0.075, 0, frameCol);
+    for (const [y, h] of [[0.17, 0.34], [2.5, 0.13], [0.83, 0.075]]) boxW(db, r.dw / 2, y, 0, r.dw, h, 0.075, 0, frameCol);
+    boxW(dg, r.dw / 2, 1.65, 0, r.dw - 0.25, 1.55, 0.012, 0, srgb('#bdd5d4'));
+  }
   boxW(dm, r.dw - 0.23, 1.08, 0.065, 0.03, 0.29, 0.035, 0, brass);
   for (const [b, mat] of [[db, MATS.roomTrim], [dg, MATS.roomGlass], [dm, MATS.roomMetal]]) { const m = new THREE.Mesh(b.build(), mat); m.castShadow = mat !== MATS.roomGlass; m.receiveShadow = true; pivot.add(m); }
   pivot.rotation.y = r.angle; r.door = pivot;
   // One tiny shared atlas-free sign texture per visible room, disposed with the room.
   const cv = document.createElement('canvas'); cv.width = 512; cv.height = 80;
-  const ctx = cv.getContext('2d'); ctx.fillStyle = r.type.color; ctx.fillRect(0, 0, 512, 80); ctx.fillStyle = '#ece4d4';
-  ctx.textAlign = 'center'; ctx.font = '26px Georgia, serif'; ctx.fillText(r.type.en, 256, 49);
+  const ctx = cv.getContext('2d'); ctx.fillStyle = r.modern ? '#eeede5' : r.type.color; ctx.fillRect(0, 0, 512, 80); ctx.fillStyle = r.modern ? '#40574d' : '#ece4d4';
+  ctx.textAlign = 'center'; ctx.font = r.modern ? '500 24px sans-serif' : '26px Georgia, serif'; ctx.fillText(r.type.en, 256, 49);
   const map = new THREE.CanvasTexture(cv); map.colorSpace = THREE.SRGBColorSpace;
   const signMat = new THREE.MeshStandardMaterial({ map, roughness: 0.65, metalness: 0.1 });
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(r.w - 0.8, 5.2), 0.68), signMat); sign.position.set(0, 3.18, hd + 0.02); group.add(sign);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(r.w - 0.8, r.modern ? 4.0 : 5.2), r.modern ? 0.40 : 0.68), signMat); sign.position.set(0, r.modern ? 3.78 : 3.18, hd + 0.02); group.add(sign);
   r.extraMaterials = [];
   if (r.type.kind === 'cafe') {
     const menuCanvas = document.createElement('canvas'); menuCanvas.width = 768; menuCanvas.height = 480;
-    const mc = menuCanvas.getContext('2d'); mc.fillStyle = '#283e35'; mc.fillRect(0, 0, 768, 480);
-    mc.strokeStyle = '#b0a780'; mc.lineWidth = 3; mc.strokeRect(18, 18, 732, 444);
-    mc.textAlign = 'center'; mc.fillStyle = '#e9ddc1'; mc.font = '42px Georgia, serif'; mc.fillText('M A R E A', 384, 80);
+    const mc = menuCanvas.getContext('2d'); mc.fillStyle = r.modern ? '#eeeee4' : '#283e35'; mc.fillRect(0, 0, 768, 480);
+    if (!r.modern) { mc.strokeStyle = '#b0a780'; mc.lineWidth = 3; mc.strokeRect(18, 18, 732, 444); }
+    mc.textAlign = 'center'; mc.fillStyle = r.modern ? '#456151' : '#e9ddc1'; mc.font = r.modern ? '500 36px sans-serif' : '42px Georgia, serif'; mc.fillText('M A R E A', 384, 80);
     mc.font = '16px sans-serif'; mc.fillText('COFFEE  /  SLOW MORNINGS  /  SEA AIR', 384, 116);
     mc.strokeStyle = '#849078'; mc.beginPath(); mc.moveTo(100, 141); mc.lineTo(668, 141); mc.stroke();
     const rows = [['ESPRESSO', '3.5'], ['FLAT WHITE', '4.8'], ['FILTER OF THE DAY', '4.5'], ['MATCHA LATTE', '5.2'], ['WARM PASTRY', '3.8']];
@@ -6818,8 +7156,9 @@ function updateInteriors(dt) {
   const wi = interiorWalkInfo(p.x, p.z, 0);
   const current = wi && wi.room;
   for (let i = 0; i < INTERIORS.lights.length; i++) {
-    const l = INTERIORS.lights[i]; l.intensity = current && current.lit ? (i ? 11 : 62) : 0;
+    const l = INTERIORS.lights[i]; l.intensity = current && current.lit ? (current.modern ? (i ? 18 : 78) : (i ? 11 : 62)) : 0;
     if (current) {
+      l.color.set(current.modern ? '#fff1dc' : (i ? '#ffdfb5' : '#ffe0b9'));
       l.position.copy(interiorWorld(current, 0, 2.66, (i ? 0.4 : -0.42) * current.d / 2));
       if (l.isSpotLight) { l.target.position.copy(interiorWorld(current, 0, 0, -0.1 * current.d)); l.target.updateMatrixWorld(); l.shadow.needsUpdate = current.lit; }
     }
@@ -6896,7 +7235,10 @@ renderer.debug.onShaderError = (gl, program, vs, fs) => {
   console.error(log);
 };
 
-const clockState = { last: performance.now(), t: 0, fpsAcc: 0, fpsN: 0, fpsShown: 0, slow: 0, checked: false };
+const clockState = { last: performance.now(), t: 0, elapsed: 0, frameMs: 0, fpsAcc: 0, fpsN: 0, fpsShown: 0, slow: 0, checked: false };
+// One frame includes the planar reflection, shadows, scene and every post pass.
+// The default automatic reset reports only the final fullscreen draw instead.
+renderer.info.autoReset = false;
 
 canvas.addEventListener('webglcontextlost', (e) => {
   e.preventDefault();
@@ -6979,10 +7321,13 @@ function frame(now) {
     clockState.last = now;
     return;
   }
-  let dt = (now - clockState.last) / 1000;
+  const rawDt = Math.max(0, (now - clockState.last) / 1000);
   clockState.last = now;
-  dt = Math.min(dt, 0.066);
+  const dt = Math.min(rawDt, 0.066);
+  clockState.elapsed += rawDt;
+  clockState.frameMs = rawDt * 1000;
   clockState.t += dt;
+  renderer.info.reset();
   const t = clockState.t;
   G.uTime.value = t;
   const w = G.uWind.value;
@@ -7005,13 +7350,15 @@ function frame(now) {
   if (typeof updateHud === 'function') updateHud(dt);
 
   // fps + one-time adaptive quality step down
-  clockState.fpsAcc += dt; clockState.fpsN++;
+  // Use wall-clock intervals for measurements; the simulation's capped delta
+  // otherwise falsely reports at least 15 fps even when rendering is slower.
+  clockState.fpsAcc += rawDt; clockState.fpsN++;
   if (clockState.fpsAcc > 0.5) {
     const fps = clockState.fpsN / clockState.fpsAcc;
     clockState.fpsShown = fps;
     const el = $('fps'); if (el) el.textContent = fps.toFixed(0) + ' fps';
     clockState.fpsAcc = 0; clockState.fpsN = 0;
-    if (!clockState.checked && t > 4) {
+    if (!clockState.checked && clockState.elapsed > 4) {
       if (fps < 24) clockState.slow++; else clockState.slow = 0;
       if (clockState.slow >= 4) {
         clockState.checked = true;
@@ -7019,7 +7366,7 @@ function frame(now) {
         const i = order.indexOf(qualityName);
         if (i < order.length - 1) { setQuality(order[i + 1]); showHint('부드럽게 보이도록 그래픽 품질을 한 단계 낮췄어요'); }
       }
-      if (t > 20) clockState.checked = true;
+      if (clockState.elapsed > 20) clockState.checked = true;
     }
   }
 }
@@ -7052,7 +7399,9 @@ async function boot() {
       samples: composer.renderTarget1.samples, width: canvas.width, height: canvas.height,
       reflection: WATER.uReflOn.value > 0, geometries: renderer.info.memory.geometries,
       materials: { ...TEX.assetStatus },
-      textures: renderer.info.memory.textures, drawCalls: renderer.info.render.calls }),
+      textures: renderer.info.memory.textures, drawCalls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles, points: renderer.info.render.points,
+      fps: clockState.fpsShown, frameMs: clockState.frameMs }),
   };
   window.__ready = true;
 }

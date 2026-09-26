@@ -10,8 +10,8 @@ const SKY_KEYS = [
   { e: -3, zen: [0.035, 0.07, 0.19], hor: [0.42, 0.24, 0.22], glow: [0.95, 0.32, 0.14], sun: [1.0, 0.42, 0.18], si: 0.2, env: 0.65, exp: 1.15, fog: 0.00028 },
   { e: 2, zen: [0.08, 0.16, 0.38], hor: [0.95, 0.52, 0.30], glow: [1.6, 0.62, 0.22], sun: [1.0, 0.50, 0.22], si: 2.2, env: 0.72, exp: 0.88, fog: 0.00030 },
   { e: 8, zen: [0.12, 0.26, 0.56], hor: [0.95, 0.72, 0.52], glow: [1.25, 0.72, 0.36], sun: [1.0, 0.68, 0.40], si: 3.0, env: 0.85, exp: 0.82, fog: 0.00026 },
-  { e: 20, zen: [0.11, 0.28, 0.66], hor: [0.66, 0.74, 0.84], glow: [0.7, 0.6, 0.45], sun: [1.0, 0.86, 0.70], si: 3.4, env: 0.95, exp: 0.86, fog: 0.00021 },
-  { e: 45, zen: [0.08, 0.25, 0.66], hor: [0.55, 0.68, 0.86], glow: [0.5, 0.5, 0.45], sun: [1.0, 0.95, 0.88], si: 3.7, env: 1.0, exp: 0.84, fog: 0.00018 },
+  { e: 20, zen: [0.11, 0.28, 0.66], hor: [0.66, 0.74, 0.84], glow: [0.7, 0.6, 0.45], sun: [1.0, 0.93, 0.82], si: 3.4, env: 1.05, exp: 0.90, fog: 0.00016 },
+  { e: 45, zen: [0.08, 0.25, 0.66], hor: [0.55, 0.68, 0.86], glow: [0.5, 0.5, 0.45], sun: [1.0, 0.95, 0.88], si: 3.7, env: 1.0, exp: 0.88, fog: 0.00013 },
   { e: 90, zen: [0.07, 0.23, 0.64], hor: [0.52, 0.66, 0.86], glow: [0.45, 0.45, 0.42], sun: [1.0, 0.97, 0.93], si: 3.8, env: 1.0, exp: 0.84, fog: 0.00017 },
 ];
 function skyPalette(elevDeg) {
@@ -149,7 +149,7 @@ vec3 starField(vec3 d) {
 `;
 
 let skyMesh, sunLight, skyMat;
-const skyState = { hour: 16.85, elev: 10, flow: false, flowRate: 1 / 60, cover: 0.42, envDirty: true, lastEnvElev: 999, lastEnvCover: -1 };
+const skyState = { hour: 15.35, elev: 24, flow: false, flowRate: 1 / 60, cover: 0.27, envDirty: true, lastEnvElev: 999, lastEnvCover: -1 };
 
 function buildSky() {
   skyMat = new THREE.ShaderMaterial({
@@ -213,7 +213,9 @@ function buildSky() {
   });
   skyMesh = new THREE.Mesh(new THREE.SphereGeometry(10000, 48, 24), skyMat);
   skyMesh.frustumCulled = false;
-  skyMesh.renderOrder = -10;
+  // Draw behind the opaque city after it has filled depth, so cloud raymarching
+  // only shades visible sky. Transparent water still renders afterwards.
+  skyMesh.renderOrder = 1000;
   scene.add(skyMesh);
 
   sunLight = new THREE.DirectionalLight(0xffffff, 3);

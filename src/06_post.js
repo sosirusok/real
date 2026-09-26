@@ -114,8 +114,8 @@ class SunShaftsPass extends Pass {
 const GradeShader = {
   uniforms: {
     tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) },
-    uVig: { value: 0.14 }, uSat: { value: 1.025 }, uCon: { value: 1.025 }, uGrain: { value: 0.003 }, uCA: { value: 0 },
-    uWarm: { value: new THREE.Vector3(1.01, 1.0, 0.985) }, uShadowTint: { value: new THREE.Vector3(0.99, 1.0, 1.02) },
+    uVig: { value: 0.065 }, uSat: { value: 1.01 }, uCon: { value: 1.015 }, uGrain: { value: 0.001 }, uCA: { value: 0 },
+    uWarm: { value: new THREE.Vector3(1.005, 1.0, 0.995) }, uShadowTint: { value: new THREE.Vector3(0.99, 1.015, 1.02) },
   },
   vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */ `

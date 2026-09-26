@@ -1,4 +1,4 @@
-<title>윤슬 항구 · Coastal World</title>
+<title>윤슬 · A quieter coast</title>
 <meta name="description" content="바다와 골목, 문을 열고 들어가는 작은 상점들. 윤슬 항구를 자유롭게 거닐어 보세요.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23182d35'/%3E%3Ccircle cx='22' cy='10' r='5' fill='%23f0b35a'/%3E%3Cpath d='M3 21q7-7 14 0t12 0M3 27q7-7 14 0t12 0' fill='none' stroke='%23a2d7d5' stroke-width='2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -8,13 +8,13 @@
   :root {
     color-scheme: dark;
     --ink: #0b0f14;
-    --glass: rgba(13, 18, 24, 0.58);
-    --glass-strong: rgba(13, 18, 24, 0.78);
-    --line: rgba(236, 228, 214, 0.12);
-    --paper: #efe8dc;
-    --muted: #a9b0b3;
-    --amber: #f0b35a;
-    --amber-ink: #2a1c08;
+    --glass: rgba(248, 249, 244, 0.79);
+    --glass-strong: rgba(248, 249, 244, 0.95);
+    --line: rgba(48, 68, 58, 0.14);
+    --paper: #273d34;
+    --muted: #65746b;
+    --amber: #cfddcc;
+    --amber-ink: #254332;
     --sea: #7fb7b0;
     --serif: 'Gowun Batang', 'Noto Serif KR', 'Apple SD Gothic Neo', serif;
     --sans: 'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
@@ -106,6 +106,28 @@
   @media (prefers-reduced-motion: reduce) {
     .hud, #loader, .hint, .drawer { transition: none; }
   }
+/* A light, quiet frame for the coastal architecture. */
+  .brand { background: var(--glass); border-radius: 18px; padding: 16px 20px; box-shadow: 0 8px 30px #193b2710; }
+  .brand h1 { font-family: var(--sans); font-size: 23px; font-weight: 500; letter-spacing: -.04em; }
+  .brand h1 small { font-size: 10px; letter-spacing: .14em; margin-left: 13px; }
+  .log { font-family: var(--sans); font-size: 11px; gap: 4px 14px; opacity: .85; }
+  .log span:nth-child(2) { display: none; }
+  .hud { padding: 24px; }
+  .chips { border-radius: 22px; padding: 6px 10px; }
+  .chips button { color: #4c6357; font-size: 12px; padding: 7px 10px; }
+  .chips button[aria-pressed="true"] { background: #dfe8d9; color: #244433; }
+  .seg { border-radius: 18px; padding: 5px; }
+  .seg button { border-radius: 13px; padding: 9px 18px; font-size: 12px; }
+  .icon-btn { background: var(--glass); border-radius: 50%; width: 42px; height: 42px; }
+  .fps { display: none; }
+  #loader { background: radial-gradient(100% 110% at 75% 10%, #dfebdf, #f4f1e7 65%, #d9e8e1); }
+  .ld h1 { font-family: var(--sans); font-weight: 400; letter-spacing: -.055em; }
+  .bar { background: #50695720; }
+  #load-bar { background: #638773; }
+  .hint kbd, .qual button, .play, .tg { background: #35523c07; }
+  input[type=range].plain::-webkit-slider-runnable-track { background: #32533b25; }
+  .tg::after { background: #81948a55; }
+  @media (max-width: 640px) { .hud { padding: 12px; } .brand { padding: 12px 14px; } .chips { padding: 4px; } .chips button { padding: 6px 8px; font-size: 11px; } .log { font-size: 10px; } }
 </style>
 <!--BODY-->
 <canvas id="world" tabindex="0" aria-label="윤슬 항구 3D 월드"></canvas>
@@ -113,7 +135,7 @@
 <div id="loader" role="status" aria-live="polite">
   <div class="ld">
     <h1>윤슬 항구</h1>
-    <p>바다에서 골목으로, 골목에서 작은 가게 안으로.<br>빛과 바람이 머무는 도시를 준비하고 있어요.</p>
+    <p>바다에서 골목으로, 골목에서 작은 가게 안으로.<br>가벼운 바람, 느린 오후. 잠시 머물 곳을 준비하고 있어요.</p>
     <div class="bar"><div id="load-bar"></div></div>
     <div id="load-step">준비 중</div>
   </div>
@@ -122,7 +144,7 @@
 <div class="hud" id="hud">
   <div class="top">
     <div class="brand">
-      <h1>윤슬 항구 <small>Yunseul Harbor</small></h1>
+      <h1>윤슬 항구 <small>A quieter coast</small></h1>
       <div class="log" aria-live="off">
         <span>시각 <b id="lg-time">17:10</b></span>
         <span>태양 고도 <b id="lg-elev">0°</b></span>
@@ -158,7 +180,7 @@
   <h2>하늘과 시간</h2>
   <div class="row">
     <label for="in-time">시각 <output id="out-time">16:51</output></label>
-    <input id="in-time" type="range" min="0" max="24" step="0.01" value="16.85">
+    <input id="in-time" type="range" min="0" max="24" step="0.01" value="15.35">
     <div style="display:flex; gap:6px; flex-wrap:wrap">
       <button class="play" id="btn-flow" aria-pressed="false">시간 흐르게 하기</button>
       <button class="play" data-t="6.1">새벽</button>
@@ -169,11 +191,11 @@
   </div>
   <div class="row">
     <label for="in-cloud">구름 <output id="out-cloud">42%</output></label>
-    <input id="in-cloud" class="plain" type="range" min="0" max="0.85" step="0.01" value="0.42">
+    <input id="in-cloud" class="plain" type="range" min="0" max="0.85" step="0.01" value="0.27">
   </div>
   <div class="row">
     <label for="in-wind">바람 <output id="out-wind">3.2 m/s</output></label>
-    <input id="in-wind" class="plain" type="range" min="0" max="1" step="0.01" value="0.45">
+    <input id="in-wind" class="plain" type="range" min="0" max="1" step="0.01" value="0.22">
   </div>
   <h2>화면</h2>
   <div class="qual" id="qual" role="group" aria-label="그래픽 품질">

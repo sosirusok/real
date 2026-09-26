@@ -1,5 +1,5 @@
 // ============================================================================
-// Landmarks: plaza (fountain, clock tower, cafe), park, piers, lighthouse,
+// Landmarks: plaza (fountain, light sculpture, cafe), park, piers, lighthouse,
 // hillside villas + chapel, beach huts
 // ============================================================================
 
@@ -23,74 +23,41 @@ function buildPlaza() {
   const cx = (Z.x0 + Z.x1) / 2, cz = (Z.z0 + Z.z1) / 2 + 3;
   const y = CITY.walk;
   const st = tb('stone', cx, cz), pb = tb('props', cx, cz);
-  const sc = srgb('#cdbfa6');
+  const sc = srgb('#e0d9c9');
   // fountain basin
   ringWall(st, cx, cz, 5.2, 5.75, y - 0.1, y + 0.55, 40, sc);
   quadW(st, new V3(cx - 5.3, y + 0.02, cz + 5.3), new V3(cx + 5.3, y + 0.02, cz + 5.3), new V3(cx + 5.3, y + 0.02, cz - 5.3), new V3(cx - 5.3, y + 0.02, cz - 5.3), srgb('#8f9990'), {}, (P) => [P.x, P.z]);
   const stoneP = { aP: [0.8, 0, 0] };
-  addGeo(pb, lathe([[0.001, 0], [0.75, 0], [0.62, 0.3], [0.5, 1.2], [0.7, 1.35]], 20), cx, y, cz, 0, 1, sc, stoneP);
-  addGeo(pb, lathe([[0.4, 0], [1.1, 0.12], [2.1, 0.35], [2.25, 0.5], [2.1, 0.52], [1.2, 0.35], [0.001, 0.32]], 32), cx, y + 1.3, cz, 0, 1, sc, stoneP);
-  addGeo(pb, lathe([[0.001, 0], [0.32, 0], [0.22, 0.4], [0.18, 1.1], [0.3, 1.2]], 16), cx, y + 1.8, cz, 0, 1, sc, stoneP);
-  addGeo(pb, lathe([[0.2, 0], [0.6, 0.08], [1.05, 0.24], [1.12, 0.36], [1.02, 0.37], [0.5, 0.25], [0.001, 0.22]], 28), cx, y + 2.95, cz, 0, 1, sc, stoneP);
-  addGeo(pb, lathe([[0.001, 0], [0.16, 0], [0.12, 0.35], [0.2, 0.45], [0.001, 0.7]], 12), cx, y + 3.25, cz, 0, 1, sc, stoneP);
+  // Clean stacked limestone bowls retain the existing water levels and jets.
+  addGeo(pb, new THREE.CylinderGeometry(0.36, 0.42, 1.5, 32), cx, y + 0.75, cz, 0, 1, sc, stoneP);
+  addGeo(pb, lathe([[0.001, 0.16], [1.92, 0.16], [2.25, 0.44], [2.25, 0.5], [2.1, 0.5], [1.98, 0.31], [0.001, 0.31]], 48), cx, y + 1.3, cz, 0, 1, sc, stoneP);
+  addGeo(pb, new THREE.CylinderGeometry(0.2, 0.24, 1.3, 24), cx, y + 2.45, cz, 0, 1, sc, stoneP);
+  addGeo(pb, lathe([[0.001, 0.13], [0.92, 0.13], [1.12, 0.3], [1.12, 0.36], [1.0, 0.36], [0.93, 0.23], [0.001, 0.23]], 40), cx, y + 2.95, cz, 0, 1, sc, stoneP);
+  addGeo(pb, new THREE.CylinderGeometry(0.095, 0.095, 0.63, 16), cx, y + 3.565, cz, 0, 1, srgb('#8a9c94'), { aP: [0.3, 0.65, 0] });
   POOLS.push({ x: cx, z: cz, y: y + 0.45, r: 5.2, depth: 0.45 });
   POOLS.push({ x: cx, z: cz, y: y + 1.78, r: 2.1, depth: 0.12 });
   POOLS.push({ x: cx, z: cz, y: y + 3.26, r: 1.0, depth: 0.08 });
   CITYDATA.fountain = { x: cx, z: cz, y };
   wgRect(cx - 6, cz - 6, cx + 6, cz + 6, (k, x, z) => { if (Math.hypot(x - cx, z - cz) < 5.9) WG.B[k] = 1; });
 
-  // clock tower (north side of the square)
+  // A flowing limestone loop marks the north side of the square. All of its
+  // geometry stays within the former tower's blocked footprint.
   const tx = cx, tz = Z.z0 + 3.5;
-  const tc = srgb('#d9c4a0');
-  boxW(st, tx, y + 4, tz, 6.4, 8, 6.4, 0, srgb('#bfae90'));
-  boxW(st, tx, y + 15, tz, 5.6, 14, 5.6, 0, tc);
-  boxW(pb, tx, y + 8.1, tz, 6.7, 0.35, 6.7, 0, srgb('#e6dccb'), stoneP);
-  boxW(pb, tx, y + 22.15, tz, 6.2, 0.3, 6.2, 0, srgb('#e6dccb'), stoneP);
-  // belfry: corner piers + bell
-  for (const [ox, oz] of [[-2.4, -2.4], [2.4, -2.4], [-2.4, 2.4], [2.4, 2.4]]) boxW(st, tx + ox, y + 24.3, tz + oz, 0.8, 4, 0.8, 0, tc);
-  boxW(pb, tx, y + 26.45, tz, 6.0, 0.35, 6.0, 0, srgb('#e6dccb'), stoneP);
-  addGeo(pb, lathe([[0.001, 1.3], [0.35, 1.25], [0.55, 0.9], [0.75, 0.2], [0.9, 0.0]], 16), tx, y + 23.2, tz, 0, 1, srgb('#8a6a2a'), { aP: [0.35, 0.9, 0] });
-  // pyramid copper roof
-  const rb = tb('roofs', tx, tz);
-  const ry0 = y + 26.6, ry1 = y + 32.5, h = 3.1;
-  const pts = [[-h, h], [h, h], [h, -h], [-h, -h]];
-  for (let i = 0; i < 4; i++) {
-    const a = new V3(tx + pts[i][0], ry0, tz + pts[i][1]), b2 = new V3(tx + pts[(i + 1) % 4][0], ry0, tz + pts[(i + 1) % 4][1]);
-    const top = new V3(tx, ry1, tz);
-    const n = new V3().subVectors(b2, a).cross(new V3().subVectors(top, a)).normalize();
-    const [T, B] = faceFrameJS(n);
-    const uv = (P) => [new V3().subVectors(P, a).dot(T), new V3().subVectors(P, a).dot(B)];
-    rb.tri(a, b2, top, n, [uv(a), uv(b2), uv(top)], [1, 1, 1], { aR: [3, 7, 0, 0] });
-  }
-  addGeo(pb, new THREE.CylinderGeometry(0.03, 0.05, 1.6, 6), tx, ry1 + 0.8, tz, 0, 1, srgb('#6d5a2a'), { aP: [0.3, 0.9, 0] });
-  // clock faces (lit at night) + hands (animated)
-  const faceG = new THREE.CircleGeometry(1.35, 32);
-  const handsIdx = [];
-  for (let i = 0; i < 4; i++) {
-    const a = (i * Math.PI) / 2;
-    const nx = Math.sin(a), nz = Math.cos(a);
-    const fx = tx + nx * 2.83, fz = tz + nz * 2.83;
-    addGeo(pb, faceG, fx, y + 18.5, fz, a, 1, srgb('#f3ead2'), { aP: [0.6, 0, 1.2] });
-    addGeo(pb, new THREE.TorusGeometry(1.38, 0.08, 6, 32), fx, y + 18.5, fz, a, 1, srgb('#3a2e1c'), { aP: [0.4, 0.6, 0] });
-    for (let k = 0; k < 12; k++) {
-      const ang = (k / 12) * TAU;
-      const px = Math.cos(ang) * 1.12, py = Math.sin(ang) * 1.12;
-      boxW(pb, fx + nz * px * 1 + nx * 0.02, y + 18.5 + py, fz - nx * px + nz * 0.02, 0.06, 0.18, 0.02, a, srgb('#2a2218'), { aP: [0.5, 0, 0] });
-    }
-    handsIdx.push({ x: fx + nx * 0.06, y: y + 18.5, z: fz + nz * 0.06, a });
-  }
-  const handGeo = new THREE.BoxGeometry(0.07, 1, 0.03).translate(0, 0.5, 0);
-  const handMat = new THREE.MeshStandardMaterial({ color: 0x1b1712, roughness: 0.4, metalness: 0.5 });
-  patch(handMat, { key: 'hand' });
-  const hands = new THREE.InstancedMesh(handGeo, handMat, 8);
-  hands.frustumCulled = false;
-  CITYDATA.clock = { hands, faces: handsIdx };
-  scene.add(hands);
+  const limestone = srgb('#e9e4d7'), bronze = srgb('#a69c7b');
+  addGeo(pb, lathe([[0.001, 0], [3.0, 0], [3.22, 0.12], [3.22, 0.42], [3.05, 0.56], [0.001, 0.56]], 64), tx, y, tz, 0, 1, limestone, stoneP);
+  const loop = new THREE.CatmullRomCurve3([
+    [-0.6, 0.68, 0], [-2.3, 3.5, -0.12], [-2.15, 9.4, -0.28],
+    [-0.25, 15.3, 0], [1.72, 12.15, 0.3], [2.1, 6.2, 0.22], [0.6, 1.8, 0.08],
+  ].map(p => new V3(...p)), true, 'centripetal');
+  addGeo(pb, new THREE.TubeGeometry(loop, 96, 0.29, 12, true), tx, y, tz, 0.22, 1, limestone, { aP: [0.6, 0.05, 0] });
+  addGeo(pb, new THREE.TorusGeometry(2.82, 0.055, 8, 64), tx, y + 8.9, tz, 0, 1, bronze, { aP: [0.3, 0.65, 0] }, Math.PI / 2);
+  addGeo(pb, new THREE.TorusGeometry(3.1, 0.022, 6, 64), tx, y + 0.46, tz, 0, 1, srgb('#fff1d5'), { aP: [0.4, 0, 2.2] }, Math.PI / 2);
+  CITYDATA.lightSculpture = { x: tx, z: tz, y, height: 15.6 };
   wgSet(tx - 3.5, tz - 3.5, tx + 3.5, tz + 3.5, null, 1);
 
   // cafe tables with parasols (south-east of fountain)
   const fb = tb('fabric', cx, cz);
-  const cafeCols = [[srgb('#efe6d2'), srgb('#2f5d4a')], [srgb('#efe6d2'), srgb('#9c3a2e')]];
+  const cafeCols = ['#e7e0ce', '#a8b5a2'].map(hex => [srgb(hex), srgb(hex)]);
   let ci = 0;
   for (const [ox, oz] of [[12, 10], [16, 4], [8, 16], [15, 15], [-12, 13], [-16, 7]]) {
     const px = cx + ox, pz = cz + oz;
@@ -181,25 +148,19 @@ function buildPark() {
     const x = pd.x + Math.cos(a) * (loopR + 2.2), z = pd.z + Math.sin(a) * (loopR + 2.2);
     addBench(x, z, -a + Math.PI / 2 + Math.PI, heightAt(x, z));
   }
-  // gazebo on a small rise south-east
+  // An open oval timber pavilion on the same accessible park deck.
   const gx = P.x1 - 17, gz = P.z1 - 17, gy = heightAt(gx, gz);
-  const pb = tb('props', gx, gz), wd = tb('wood', gx, gz), rb = tb('roofs', gx, gz);
-  addGeo(wd, new THREE.CylinderGeometry(4.2, 4.3, 0.4, 8), gx, gy + 0.2, gz, Math.PI / 8, 1, srgb('#a58563'));
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * TAU + Math.PI / 8;
-    addGeo(pb, new THREE.CylinderGeometry(0.12, 0.14, 2.7, 8), gx + Math.cos(a) * 3.8, gy + 1.75, gz + Math.sin(a) * 3.8, 0, 1, srgb('#efe9dd'), { aP: [0.6, 0, 0] });
+  const pb = tb('props', gx, gz), wd = tb('wood', gx, gz);
+  addGeo(wd, new THREE.CylinderGeometry(4.2, 4.3, 0.4, 48), gx, gy + 0.2, gz, 0, 1, srgb('#c7b28f'));
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2 + Math.PI / 4;
+    addGeo(pb, new THREE.CylinderGeometry(0.1, 0.12, 2.77, 12), gx + Math.cos(a) * 3.65, gy + 1.785, gz + Math.sin(a) * 3.2, 0, 1, srgb('#c3ac86'), { aP: [0.65, 0, 0] });
   }
-  const ry0 = gy + 3.1, ry1 = gy + 5.3;
-  for (let i = 0; i < 8; i++) {
-    const a0 = (i / 8) * TAU + Math.PI / 8, a1 = ((i + 1) / 8) * TAU + Math.PI / 8;
-    const a = new V3(gx + Math.cos(a0) * 4.7, ry0, gz + Math.sin(a0) * 4.7), b2 = new V3(gx + Math.cos(a1) * 4.7, ry0, gz + Math.sin(a1) * 4.7);
-    const top = new V3(gx, ry1, gz);
-    const n = new V3().subVectors(top, a).cross(new V3().subVectors(b2, a)).normalize();
-    const [T, B] = faceFrameJS(n);
-    const uv = (Pp) => [new V3().subVectors(Pp, a).dot(T), new V3().subVectors(Pp, a).dot(B)];
-    rb.tri(a, top, b2, n, [uv(a), uv(top), uv(b2)], [1, 1, 1], { aR: [3, 3, 0, 0] });
+  addGeo(pb, new THREE.CylinderGeometry(4.75, 4.75, 0.17, 64), gx, gy + 3.255, gz, 0, new V3(1, 1, 0.88), srgb('#e6e5dc'), { aP: [0.56, 0.12, 0] });
+  for (let z = -3.6; z <= 3.6; z += 0.4) {
+    const span = 9.2 * Math.sqrt(Math.max(0, 1 - (z / 4.05) ** 2));
+    boxW(wd, gx, gy + 3.105, gz + z, span, 0.14, 0.22, 0, srgb('#cbb794'));
   }
-  addGeo(pb, new THREE.CylinderGeometry(4.75, 4.75, 0.25, 8), gx, ry0 - 0.1, gz, Math.PI / 8, 1, srgb('#efe9dd'), { aP: [0.6, 0, 0] });
   wgRect(gx - 5, gz - 5, gx + 5, gz + 5, (k, x, z) => { const r = Math.hypot(x - gx, z - gz); if (r < 4.3) WG.H[k] = gy + 0.4; });
   CITYDATA.gazebo = { x: gx, z: gz };
 }

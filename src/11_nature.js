@@ -477,6 +477,59 @@ function placeTrees() {
 
 // --- grass + flowers (camera-following instanced fields) -------------------------------
 const FIELDS = [];
+const FIELD_MASK_BLOCK = 32;
+let fieldMaskOccupancy = null, fieldMaskTexture = null, fieldMaskVersion = -1;
+let fieldVisibilityCellX = null, fieldVisibilityCellZ = null;
+
+function buildFieldMaskOccupancy(mask, n = MASK_N, world = WORLD) {
+  const cells = Math.ceil(n / FIELD_MASK_BLOCK), occupied = new Uint8Array(cells * cells);
+  for (let z = 0; z < n; z++) for (let x = 0; x < n; x++) {
+    const pixel = (z * n + x) * 4;
+    const bits = (mask[pixel] > 0 ? 1 : 0) | (mask[pixel + 1] > 0 ? 2 : 0);
+    if (bits) occupied[Math.floor(z / FIELD_MASK_BLOCK) * cells + Math.floor(x / FIELD_MASK_BLOCK)] |= bits;
+  }
+  return { occupied, cells, pixelWorld: world / n, cellWorld: world / n * FIELD_MASK_BLOCK, world };
+}
+
+function fieldMaskHasVegetation(mask, minX, maxX, minZ, maxZ, channel) {
+  // Clamp indices like the GPU mask sampler: points outside the world still
+  // inherit its boundary texels. Any occupied texel retains the entire field.
+  const index = v => clamp(Math.floor((v + mask.world / 2) / mask.cellWorld), 0, mask.cells - 1);
+  const x0 = index(minX), x1 = index(maxX), z0 = index(minZ), z1 = index(maxZ);
+  for (let z = z0; z <= z1; z++) for (let x = x0; x <= x1; x++) {
+    if (mask.occupied[z * mask.cells + x] & channel) return true;
+  }
+  return false;
+}
+
+function updateFieldVisibility(force = false) {
+  const texture = G.uMask.value;
+  // buildNature precedes finishMask; wait for the final city/park mask upload.
+  if (!texture || !texture.image || texture.image.data !== MASK) {
+    for (const f of FIELDS) f.visible = true;
+    fieldVisibilityCellX = fieldVisibilityCellZ = null;
+    return;
+  }
+  if (texture !== fieldMaskTexture || texture.version !== fieldMaskVersion) {
+    fieldMaskOccupancy = buildFieldMaskOccupancy(MASK);
+    fieldMaskTexture = texture; fieldMaskVersion = texture.version;
+    force = true;
+  }
+  const mask = fieldMaskOccupancy, step = mask.pixelWorld * 8;
+  const cx = Math.floor((camera.position.x + WORLD / 2) / step);
+  const cz = Math.floor((camera.position.z + WORLD / 2) / step);
+  if (!force && cx === fieldVisibilityCellX && cz === fieldVisibilityCellZ) return;
+  fieldVisibilityCellX = cx; fieldVisibilityCellZ = cz;
+  const minX = cx * step - WORLD / 2, minZ = cz * step - WORLD / 2;
+  for (const f of FIELDS) {
+    // Cover every possible camera position in this cached cell, plus the whole
+    // fade footprint, maximum blade movement and linear-filter texel support.
+    const radius = f.userData.u.uFadeF.value + 4 + mask.pixelWorld;
+    f.visible = fieldMaskHasVegetation(mask, minX - radius, minX + step + radius,
+      minZ - radius, minZ + step + radius, f.userData.maskChannel);
+  }
+}
+
 function bladeClump(nBlades, seg, width) {
   const pos = [], nrm = [], idx = [], uv = [];
   const rng = mulberry32(5);
@@ -609,7 +662,7 @@ function makeField({ geo, count, tile, fadeN, fadeF, hScale, key, flowers = fals
   mesh.receiveShadow = true;
   mesh.castShadow = false;
   mesh.layers.set(LAYER_NOREFLECT);
-  mesh.userData = { u, full: count };
+  mesh.userData = { u, full: count, maskChannel: flowers ? 2 : 1 };
   scene.add(mesh);
   FIELDS.push(mesh);
   return mesh;
@@ -656,6 +709,7 @@ let lodTimer = 0;
 function updateFields(dt = 0.016) {
   for (const f of FIELDS) f.userData.u.uCamF.value.copy(camera.position);
   lodTimer -= dt;
+  updateFieldVisibility(lodTimer <= 0);
   if (lodTimer > 0) return;
   lodTimer = 0.3;
   const c = camera.position;

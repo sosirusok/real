@@ -543,10 +543,10 @@ function updateBoats(t) {
 // --- trams ----------------------------------------------------------------------------------
 function tramGeometry() {
   const b = new GeoBuilder({ aP: 3 }, { aP: [0.5, 0, 0] });
-  const red = srgb('#b33a2b'), cream = srgb('#efe4c8'), dark = srgb('#2a2d2e');
-  boxW(b, 0, 0.75, 0, 11, 1.1, 2.4, 0, red);
+  const sage = srgb('#70877b'), cream = srgb('#f1f0e7'), dark = srgb('#2a2d2e');
+  boxW(b, 0, 0.75, 0, 11, 1.1, 2.4, 0, sage);
   boxW(b, 0, 2.05, 0, 11, 1.5, 2.4, 0, cream);
-  boxW(b, 0, 3.0, 0, 11.2, 0.4, 2.5, 0, red);
+  boxW(b, 0, 3.0, 0, 11.2, 0.4, 2.5, 0, sage);
   boxW(b, 0, 3.35, 0, 10.4, 0.3, 2.1, 0, srgb('#6a6d6e'));
   for (let k = -4; k <= 4; k++) {
     for (const sz of [1.21, -1.21]) boxW(b, k * 1.15, 2.1, sz, 0.95, 1.05, 0.03, 0, srgb('#1e2a30'), { aP: [0.08, 0.3, 3.5] });
