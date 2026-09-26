@@ -841,7 +841,7 @@ function buildFountainWater() {
       if (a < 0.02) discard;
       vec3 V = normalize(cameraPosition - vW);
       float glint = pow(max(dot(-V, uTrueSun), 0.0), 8.0);
-      vec3 c = uZenith * 0.8 + uHorizon * 0.6 + uSunCol * (0.12 + glint * 0.8) + vec3(0.02);
+      vec3 c = uZenith * 0.8 + uHorizon * 0.6 + uSunCol * (0.12 + glint * 0.8) + vec3(0.02) + vec3(1.0, 0.72, 0.42) * uNight * 0.35;
       c = applyFog(c, vW);
       gl_FragColor = vec4(c, a * 0.55);
     }`, { additive: false });
@@ -868,7 +868,7 @@ function buildFountainWater() {
         vec3 V = normalize(cameraPosition - vW);
         float fr = pow(1.0 - abs(dot(V, vN)), 2.0);
         float a = (0.12 + streak * 0.45 + fr * 0.35) * smoothstep(0.0, 0.15, vUv.y);
-        vec3 c = uZenith * 0.9 + uHorizon * 0.7 + uSunCol * 0.12 + vec3(0.03);
+        vec3 c = uZenith * 0.9 + uHorizon * 0.7 + uSunCol * 0.12 + vec3(0.03) + vec3(1.0, 0.72, 0.42) * uNight * 0.3;
         gl_FragColor = vec4(applyFog(c, vW), a);
       }`,
     transparent: true, depthWrite: false, side: THREE.DoubleSide,
@@ -891,7 +891,8 @@ function buildLampLights() {
       vW = position;
       vec4 mv = modelViewMatrix * vec4(position, 1.0);
       vA = smoothstep(0.35, 0.8, uNight);
-      gl_PointSize = 2.6 * uPR * 900.0 / -mv.z;
+      gl_PointSize = min(2.6 * uPR * 900.0 / -mv.z, 70.0 * uPR);
+      vA *= smoothstep(3.0, 9.0, -mv.z);
       gl_Position = projectionMatrix * mv;
     }`, /* glsl */ `
     uniform sampler2D uGlow; varying float vA; varying vec3 vW;
