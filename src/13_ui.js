@@ -40,6 +40,7 @@ function initUI() {
     const b = document.createElement('button');
     b.innerHTML = `<span class="k">${v.key}</span>${v.name}`;
     b.title = `${v.name}(으)로 이동 (${v.key})`;
+    b.dataset.view = i;
     b.addEventListener('click', () => goToView(i));
     vc.appendChild(b);
   });
@@ -114,7 +115,7 @@ function initUI() {
     if (e.code === 'KeyH') toggleHud();
     if (e.code === 'KeyT') setFlow(!skyState.flow);
     if (e.code === 'KeyM') mb.click();
-    if (/^Digit[1-7]$/.test(e.code)) goToView(+e.code.slice(5) - 1);
+    if (/^Digit[1-9]$/.test(e.code)) goToView(+e.code.slice(5) - 1);
     if (e.code === 'KeyV') {
       const order = ['orbit', 'walk', 'fly', 'cine'];
       setMode(order[(order.indexOf(CTRL.mode) + 1) % order.length]);

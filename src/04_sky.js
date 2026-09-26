@@ -42,9 +42,10 @@ float hgPhase(float c, float g) { float g2 = g * g; return (1.0 - g2) / (4.0 * 3
 vec3 skyBase(vec3 d) {
   float y = max(d.y, 0.0);
   vec3 sd = uTrueSun;
-  vec2 dh = normalize(d.xz + 1e-5), sh = normalize(sd.xz + 1e-5);
+  vec2 dh = d.xz / max(length(d.xz), 1e-5);
+  vec2 sh = sd.xz / max(length(sd.xz), 1e-5);
   float az = max(dot(dh, sh), 0.0);
-  float azs = dot(dh, sh) * 0.5 + 0.5;
+  float azs = clamp(dot(dh, sh) * 0.5 + 0.5, 0.0, 1.0);
   vec3 horC = mix(mix(uHorizon, uZenith * 1.35 + vec3(0.02), 0.42), uHorizon, pow(azs, 1.6));
   vec3 col = mix(horC, uZenith, pow(y, 0.5));
   float c = dot(d, sd);
@@ -54,7 +55,7 @@ vec3 skyBase(vec3 d) {
   col += uGlow * pow(max(c, 0.0), 3.0) * 0.12 * sunUp;
   // horizon haze band
   col = mix(col, horC * 1.05, exp(-y * 30.0) * 0.4);
-  if (d.y < 0.0) col = mix(horC, horC * 0.55 + uZenith * 0.1, smoothstep(0.0, -0.3, d.y));
+  if (d.y < 0.0) col = mix(horC, horC * 0.55 + uZenith * 0.1, 1.0 - smoothstep(-0.3, 0.0, d.y));
   return col;
 }
 
@@ -137,10 +138,11 @@ vec3 starField(vec3 d) {
   float star = 0.0;
   if (h > 0.985) {
     float tw = 0.6 + 0.4 * sin(uTime * (1.0 + h * 5.0) + h * 40.0);
-    star = smoothstep(0.18, 0.0, length(f)) * tw * (h - 0.985) * 90.0;
+    star = (1.0 - smoothstep(0.0, 0.18, length(f))) * tw * (h - 0.985) * 90.0;
   }
   // faint milky way band
-  float band = exp(-pow(dot(d, normalize(vec3(0.3, 0.2, -0.93))) * 3.2, 2.0));
+  float bandDistance = dot(d, normalize(vec3(0.3, 0.2, -0.93))) * 3.2;
+  float band = exp(-bandDistance * bandDistance);
   float mw = texture2D(uNoise, d.xz * 1.7 + d.y).b * band;
   return vec3(0.8, 0.85, 1.0) * star + vec3(0.12, 0.13, 0.18) * mw * mw * 0.35;
 }

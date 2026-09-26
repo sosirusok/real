@@ -94,6 +94,8 @@ function wgBlockOriented(cx, cz, w, d, rot, pad = 0.3) {
   });
 }
 function cityWalkInfo(x, z) {
+  const precise = typeof interiorWalkInfo === 'function' ? interiorWalkInfo(x, z) : null;
+  if (precise) return precise;
   const i = Math.floor(x - WG.x0), j = Math.floor(z - WG.z0);
   if (i < 0 || j < 0 || i >= WG.w || j >= WG.h) { const h = heightAt(x, z); return { h, blocked: h < 0.25 }; }
   const k = j * WG.w + i;
@@ -111,6 +113,16 @@ const TRIM = srgb('#ddd4c4');
 // o: {cx, cz, w, d, rot, baseY, floors, fh, color, roof, roofColor, roofStyle,
 //     party:{left,right,back}, gType, shutI, wStyle, balMode, quoins, seed, awning, flowers}
 function addBuilding(o) {
+  // On natural ground the entire floor must clear the footprint. Keeper/chapel
+  // origins used the centre height, which can put terrain through their rooms.
+  if (o.plinth > 0) {
+    const c0 = Math.cos(o.rot), s0 = Math.sin(o.rot);
+    let support = o.baseY;
+    for (const x of [-o.w / 2, 0, o.w / 2]) for (const z of [-o.d / 2, 0, o.d / 2]) {
+      support = Math.max(support, heightAt(o.cx + x * c0 + z * s0, o.cz - x * s0 + z * c0) + 0.1);
+    }
+    o.plinth += support - o.baseY; o.baseY = support;
+  }
   const gh = 4.2;
   const H = o.floors <= 1 ? gh : gh + (o.floors - 1) * o.fh;
   const c = Math.cos(o.rot), s = Math.sin(o.rot);
@@ -129,10 +141,13 @@ function addBuilding(o) {
   for (const wl of walls) {
     const flags = (wl.party ? 1 : 0) + (o.quoins ? 2 : 0) + (wl === walls[0] ? o.balMode * 4 : 0);
     const ex = { aF: [o.seed, o.fh, o.floors, wl.W], aS: [wl.g, o.shutI, o.wStyle, flags] };
-    const p0 = L(wl.a[0], -plinthDrop, wl.a[1]), p1 = L(wl.b[0], -plinthDrop, wl.b[1]);
+    // Ground floors are thick, openable geometry constructed by registerInterior.
+    // Retain the efficient upper-storey material with its original world-height UVs.
+    const bottom = typeof registerInterior === 'function' ? gh : -plinthDrop;
+    const p0 = L(wl.a[0], bottom, wl.a[1]), p1 = L(wl.b[0], bottom, wl.b[1]);
     const p2 = L(wl.b[0], topWall, wl.b[1]), p3 = L(wl.a[0], topWall, wl.a[1]);
     const n = new V3().subVectors(p1, p0).cross(new V3().subVectors(p2, p0)).normalize();
-    wb.quad(p0, p1, p2, p3, n, [[0, -plinthDrop], [wl.W, -plinthDrop], [wl.W, topWall], [0, topWall]], o.color, ex);
+    wb.quad(p0, p1, p2, p3, n, [[0, bottom], [wl.W, bottom], [wl.W, topWall], [0, topWall]], o.color, ex);
   }
   const trimC = o.trim || TRIM;
   const pbEx = { aP: [0.75, 0, 0] };
@@ -287,7 +302,7 @@ function addBuilding(o) {
       const n2 = new V3().subVectors(e2, e1).cross(new V3().subVectors(e3, e1)).normalize().negate();
       fb.quad(e4, e3, e2, e1, n2, [[0, 1], [aw, 1], [aw, 1], [0, 1]], ca, { aC: [cb[0], cb[1], cb[2], 1] });
     }
-  } else if (o.gType === 0) {
+  } else if (o.gType === 0 && typeof registerInterior !== 'function') {
     // doorstep
     const cx = -w / 2 + (Math.floor(nb / 2) + 0.5) * bw;
     boxW(pb, ...L(cx, 0.08, d / 2 + 0.25).toArray(), 1.6, 0.16, 0.5, o.rot, srgb('#9d968b'), { aP: [0.85, 0, 0] });
@@ -306,8 +321,11 @@ function addBuilding(o) {
       CITYDATA.flowerBoxes.push({ p: L(cx, y + 0.02, d / 2 + 0.2), w: ww, rot: o.rot, kind: Math.floor(rand() * 4) });
     }
   }
-  CITYDATA.buildings.push({ cx: o.cx, cz: o.cz, w, d, rot: o.rot, H: ridgeY });
-  wgBlockOriented(o.cx, o.cz, w, d, o.rot, 0.2);
+  const room = typeof registerInterior === 'function' ? registerInterior(o) : null;
+  CITYDATA.buildings.push({ cx: o.cx, cz: o.cz, w, d, rot: o.rot, H: ridgeY, room });
+  // Detailed rooms provide their own capsule collision. Blocking their entire
+  // footprint in the coarse grid leaves a 0.5 m invisible lip across doorways.
+  if (!room) wgBlockOriented(o.cx, o.cz, w, d, o.rot, 0.2);
 }
 
 // --- block generation --------------------------------------------------------------
@@ -377,7 +395,7 @@ function genCityBlock(b) {
       if (sd.dir === 'w') { const t = pl; pl = pr; pr = t; }
       if (sd.dir === 'e' || sd.dir === 'w') { pl = true; pr = true; }
       addBuilding({
-        cx, cz, w: lw, d, rot: sd.rot, baseY: CITY.walk - 0.02, floors, fh: rr(3.0, 3.4),
+        cx, cz, w: lw, d, rot: sd.rot, baseY: CITY.walk - 0.02, floors, fh: rr(3.0, 3.4), corner,
         color: pick(WALL_COLS), roof, roofColor: slate ? pick(ROOF_SLATE) : pick(ROOF_CLAY), roofStyle: slate ? 1 : 0,
         pitch: slate ? rr(0.7, 0.85) : rr(0.5, 0.62),
         party: { left: pl, right: pr, back: false }, gType, shutI: rand() < 0.55 ? 1 + Math.floor(rand() * 4) : 0,
@@ -612,6 +630,7 @@ function buildStreetProps() {
 // --- materials + mesh assembly -------------------------------------------------------
 function finalizeCity() {
   const matFor = { walls: MATS.facade, roofs: MATS.roof, stone: MATS.stone, cobble: MATS.cobble, flag: MATS.flag, props: MATS.props, rail: MATS.rail, wood: MATS.wood, fabric: MATS.fabric };
+  for (const kind of ['roomWood', 'roomStone', 'roomPlaster', 'roomTrim', 'roomMetal', 'roomGlass']) matFor[kind] = MATS[kind];
   const group = new THREE.Group();
   for (const [, b] of TB) {
     if (!b.vcount) continue;
@@ -620,7 +639,7 @@ function finalizeCity() {
       // aoMap uses uv; generate tangents-free normal mapping (three computes from derivatives)
     }
     const m = new THREE.Mesh(g, matFor[b.kind]);
-    m.castShadow = !(b.kind === 'cobble' || b.kind === 'flag');
+    m.castShadow = !(b.kind === 'cobble' || b.kind === 'flag' || b.kind === 'roomGlass');
     m.receiveShadow = true;
     if (b.kind === 'rail') m.customDepthMaterial = undefined;
     group.add(m);
@@ -662,6 +681,7 @@ function buildCity() {
   buildStreetProps();
   cityMask();
   if (typeof buildLandmarks === 'function') buildLandmarks();
+  if (typeof buildInteriors === 'function') buildInteriors();
   finalizeCity();
   walkInfo = cityWalkInfo;
 }

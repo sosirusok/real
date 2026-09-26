@@ -313,7 +313,7 @@ function buildHills() {
     const { x, z } = best;
     const y = best.h;
     addBuilding({
-      cx: x, cz: z, w: 7, d: 14, rot: 0, baseY: y + 0.1, plinth: 1.5, floors: 1, fh: 3, color: srgb('#f3efe6'),
+      cx: x, cz: z, w: 7, d: 14, rot: Math.PI, baseY: y + 0.1, plinth: 1.5, floors: 1, fh: 3, color: srgb('#f3efe6'),
       roof: 'gable', roofColor: srgb('#50565e'), roofStyle: 1, pitch: 0.8, party: { left: false, right: false, back: false },
       gType: 0, shutI: 0, wStyle: 2, balMode: 0, quoins: true, seed: 77,
     });

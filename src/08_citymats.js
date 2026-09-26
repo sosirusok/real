@@ -15,6 +15,8 @@ const GLSL_FRAME = /* glsl */ `
 `;
 
 const FACADE_FRAG = /* glsl */ `
+  uniform sampler2D uFacadeSurface;
+  uniform float uFacadePhoto;
   varying vec2 vUvM;
   varying vec4 vF;
   varying vec4 vS;
@@ -26,8 +28,8 @@ const FACADE_FRAG = /* glsl */ `
   vec3 roomColor(vec2 qg, vec3 Vt, vec2 room0, vec2 room1, float depthR, float rs, float lit, float shop) {
     vec3 o = vec3(qg, 0.0);
     vec3 d = normalize(vec3(-Vt.x, -Vt.y, max(Vt.z, 0.05)));
-    float tx = ((d.x > 0.0 ? room1.x : room0.x) - o.x) / d.x;
-    float ty = ((d.y > 0.0 ? room1.y : room0.y) - o.y) / d.y;
+    float tx = abs(d.x) > 0.00001 ? ((d.x > 0.0 ? room1.x : room0.x) - o.x) / d.x : 100000.0;
+    float ty = abs(d.y) > 0.00001 ? ((d.y > 0.0 ? room1.y : room0.y) - o.y) / d.y : 100000.0;
     float tz = depthR / d.z;
     float t = min(min(tx, ty), tz);
     vec3 h = o + d * t;
@@ -84,6 +86,9 @@ const FACADE_FRAG = /* glsl */ `
     float n2 = texture2D(uNoise, (p + seed * 11.0) * 0.8).b;
     float n3 = texture2D(uNoise, p * 3.3).a;
     vec3 alb = wallC * (0.84 + 0.3 * n1) * (0.94 + 0.12 * n2);
+    vec2 photoUV = p * 0.22 + vec2(fract(seed * 7.13), fract(seed * 3.71));
+    vec3 plaster = texture2D(uFacadeSurface, photoUV).rgb;
+    alb = mix(alb, wallC * (plaster * 0.62 + 0.38) * (0.94 + 0.09 * n1), uFacadePhoto);
     float rough = 0.88;
     vec3 nt = vec3((n3 - 0.5) * 0.14, (n2 - 0.5) * 0.1, 1.0);
     vec3 emis = vec3(0.0);
@@ -253,6 +258,10 @@ function makeFacadeMaterial() {
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0 });
   patch(mat, {
     key: 'facade',
+    uniforms: {
+      uFacadeSurface: { value: TEX.generatedPlaster || TEX.noise },
+      uFacadePhoto: { value: TEX.generatedPlaster ? 1 : 0 },
+    },
     vHead: 'attribute vec4 aF; attribute vec4 aS; varying vec2 vUvM; varying vec4 vF; varying vec4 vS; varying vec3 vNW;',
     vEnd: 'vUvM = uv; vF = aF; vS = aS; vNW = normalize(mat3(modelMatrix) * objectNormal);',
     fHead: FACADE_FRAG,
@@ -374,7 +383,7 @@ function makeStoneMaterial() {
         c = mix(c, c * vec3(0.45, 0.5, 0.42), wet);
         float algae = smoothstep(-0.9, -0.1, y) * (1.0 - smoothstep(-0.1, 0.45, y));
         c = mix(c, vec3(0.1, 0.16, 0.08), algae * 0.75);
-        float moss = smoothstep(0.62, 0.85, texture2D(uNoise, p * 0.15).g) * smoothstep(3.5, 0.5, y);
+        float moss = smoothstep(0.62, 0.85, texture2D(uNoise, p * 0.15).g) * (1.0 - smoothstep(0.5, 3.5, y));
         c = mix(c, vec3(0.16, 0.22, 0.08), moss * 0.4);
         sAlb = c;
         sRough = mix(0.85, 0.3, wet);
@@ -397,7 +406,7 @@ function makeStoneMaterial() {
 function makePavingMaterial(set, key, extra = {}) {
   const mat = new THREE.MeshStandardMaterial({
     map: set.map, normalMap: set.normalMap, roughnessMap: set.orm, aoMap: set.orm,
-    normalScale: new THREE.Vector2(1, 1), roughness: 1, metalness: 0, aoMapIntensity: 1, ...extra,
+      normalScale: new THREE.Vector2(0.35, 0.35), roughness: set.orm ? 1 : 0.83, metalness: 0, aoMapIntensity: 0.35, ...extra,
   });
   patch(mat, {
     key,

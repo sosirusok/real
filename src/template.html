@@ -1,4 +1,6 @@
-<title>윤슬 항구</title>
+<title>윤슬 항구 · Coastal World</title>
+<meta name="description" content="바다와 골목, 문을 열고 들어가는 작은 상점들. 윤슬 항구를 자유롭게 거닐어 보세요.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23182d35'/%3E%3Ccircle cx='22' cy='10' r='5' fill='%23f0b35a'/%3E%3Cpath d='M3 21q7-7 14 0t12 0M3 27q7-7 14 0t12 0' fill='none' stroke='%23a2d7d5' stroke-width='2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
@@ -45,7 +47,7 @@
   .seg button, .chips button { border: 0; background: transparent; padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 500; letter-spacing: 0.01em; white-space: nowrap; }
   .seg button:hover, .chips button:hover { background: rgba(255,255,255,0.07); }
   .seg button[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); }
-  .chips button { font-size: 12.5px; color: var(--muted); padding: 6px 11px; }
+  .chips button { font-size: 14px; color: #d5d9d7; padding: 7px 12px; }
   .chips button .k { font-family: var(--mono); font-size: 10.5px; opacity: .55; margin-right: 5px; }
   .chips button:hover { color: var(--paper); }
 
@@ -70,7 +72,7 @@
   .qual button[aria-pressed="true"] { background: var(--paper); color: var(--ink); border-color: var(--paper); }
   .play { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); border-radius: 9px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
   .play[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); }
-  .note { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin: 0; }
+  .note { font-size: 14px; color: var(--muted); line-height: 1.65; margin: 0; }
 
   .hint { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; padding: 10px 16px; border-radius: 12px; background: var(--glass-strong); border: 1px solid var(--line); font-size: 13px; color: var(--paper); text-align: center; line-height: 1.6; opacity: 0; transition: opacity .4s; max-width: calc(100vw - 32px); }
   .hint.show { opacity: 1; }
@@ -111,7 +113,7 @@
 <div id="loader" role="status" aria-live="polite">
   <div class="ld">
     <h1>윤슬 항구</h1>
-    <p>해 질 녘 빛이 물 위에 부서지는 작은 항구 도시. 지형, 물, 구름, 나무와 새들을 지금 이 자리에서 만들고 있어요.</p>
+    <p>바다에서 골목으로, 골목에서 작은 가게 안으로.<br>빛과 바람이 머무는 도시를 준비하고 있어요.</p>
     <div class="bar"><div id="load-bar"></div></div>
     <div id="load-step">준비 중</div>
   </div>
@@ -129,7 +131,7 @@
     </div>
     <div class="top-right">
       <span class="fps" id="fps"></span>
-      <button class="icon-btn" id="btn-sound" aria-pressed="false" aria-label="소리 켜기" title="소리 (S)">
+      <button class="icon-btn" id="btn-sound" aria-pressed="false" aria-label="소리 켜기" title="소리 켜기 / 끄기">
         <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>
       </button>
       <button class="icon-btn" id="btn-settings" aria-pressed="false" aria-label="설정 열기" title="설정">
@@ -186,7 +188,7 @@
     <button class="tg" id="tg-grade" aria-pressed="true">색 보정</button>
     <button class="tg" id="tg-music" aria-pressed="false">잔잔한 음악</button>
   </div>
-  <p class="note">마우스로 드래그해 돌아보고, 걷기와 비행에서는 화면을 클릭한 뒤 WASD로 움직여요. 숫자 1–7은 시점 이동, H는 UI 숨기기, T는 시간 흐름이에요.</p>
+  <p class="note">드래그로 둘러보고, 걷기에서는 WASD로 이동하세요. 실내 골목에서 문에 다가가 E를 누르면 들어갈 수 있어요. E로 조명을 켜거나 의자에 앉을 수 있어요. 1–8 시점 이동 · H 화면 숨기기 · T 시간 흐름.</p>
 </div>
 
 <div class="hint" id="hint"></div>

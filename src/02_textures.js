@@ -1,5 +1,5 @@
 // ============================================================================
-// Procedural textures (everything is generated at load; no image files)
+// Generated photographic surfaces plus procedural detail and natural textures.
 // ============================================================================
 
 const MAX_ANISO = renderer.capabilities.getMaxAnisotropy();
@@ -178,7 +178,7 @@ function makeCobbles() {
     const edge = (Math.sqrt(d2) - Math.sqrt(d1)) * C; // 0 at borders
     const f = fp[id];
     const grain = pn(u * 64, v * 64, 64) * 0.5 + pn(u * 128, v * 128, 128) * 0.3;
-    const dome = smoothstep(0.02, 0.28, edge);
+    const dome = smoothstep(0.006, 0.16, edge);
     const height = dome * (0.8 + 0.2 * f[2]) + grain * 0.04 * dome;
     h[y * N + x] = height;
     const i = (y * N + x) * 4;
@@ -188,13 +188,13 @@ function makeCobbles() {
     if (t < 0.55) { cr = 150; cg = 146; cb = 140; } else if (t < 0.85) { cr = 168; cg = 150; cb = 122; } else { cr = 105; cg = 104; cb = 104; }
     const lv = 0.82 + f[3] * 0.3 + grain * 0.25;
     const gap = 1 - dome;
-    cr = lerp(cr * lv, 70, gap * 0.85); cg = lerp(cg * lv, 64, gap * 0.85); cb = lerp(cb * lv, 55, gap * 0.85);
+    cr = lerp(cr * lv, 108, gap * 0.4); cg = lerp(cg * lv, 102, gap * 0.4); cb = lerp(cb * lv, 92, gap * 0.4);
     alb[i] = clamp(cr, 0, 255); alb[i + 1] = clamp(cg, 0, 255); alb[i + 2] = clamp(cb, 0, 255); alb[i + 3] = 255;
     orm[i] = (0.55 + 0.45 * dome) * 255;             // AO
     orm[i + 1] = (0.62 + 0.3 * gap + (1 - f[3]) * 0.08) * 255; // roughness
     orm[i + 2] = 0; orm[i + 3] = 255;
   }
-  const nrm = heightToNormal(h, N, N, 6.0, new Uint8Array(N * N * 4));
+  const nrm = heightToNormal(h, N, N, 2.2, new Uint8Array(N * N * 4));
   return { map: dataTex(alb, N, N, { srgb: true }), normalMap: dataTex(nrm, N, N), orm: dataTex(orm, N, N) };
 }
 
@@ -512,7 +512,42 @@ function makeGlowSprite() {
 }
 
 const TEX = {};
-function buildTextures() {
+const MATERIAL_ASSETS = /*MATERIAL_ASSETS*/ {};
+
+// Colour images are albedo, not measured scan data. Subtle derived relief is
+// deliberately shallow; it must not turn every grain into an embossed tile.
+async function loadPhotographicSurfaces() {
+  const loader = new THREE.TextureLoader();
+  const specs = [
+    ['generatedStone', 'stone', 'aged-limestone-paving-albedo.jpg'],
+    ['generatedPlaster', 'plaster', 'warm-lime-plaster-albedo.jpg'],
+    ['generatedWood', 'wood', 'aged-oak-planks-albedo.jpg'],
+  ];
+  TEX.assetStatus = {};
+  await Promise.all(specs.map(async ([key, asset, name]) => {
+    try {
+      const url = MATERIAL_ASSETS[asset] || `./assets/materials/${name}`;
+      const tex = await Promise.race([
+        loader.loadAsync(url),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('texture timeout')), 15000)),
+      ]);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = tex.wrapT = THREE.MirroredRepeatWrapping;
+      tex.anisotropy = Math.min(16, MAX_ANISO);
+      TEX[key] = tex;
+      TEX.assetStatus[asset] = 'loaded';
+    } catch (error) {
+      TEX.assetStatus[asset] = 'fallback';
+      console.warn(`Surface ${asset} unavailable; using local procedural material.`, error.message);
+    }
+  }));
+  if (TEX.generatedStone) {
+    TEX.flag = { map: TEX.generatedStone, normalMap: null, orm: null };
+  }
+  if (TEX.generatedWood) TEX.wood = { map: TEX.generatedWood, normalMap: null };
+}
+
+async function buildTextures() {
   TEX.noise = makeNoiseTexture();
   G.uNoise.value = TEX.noise;
   TEX.water = makeWaterNormals();
@@ -529,4 +564,5 @@ function buildTextures() {
   TEX.flowers = makeFlowerAtlas();
   TEX.railing = makeRailing();
   TEX.glow = makeGlowSprite();
+  await loadPhotographicSurfaces();
 }
